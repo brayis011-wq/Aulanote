@@ -17,7 +17,7 @@ public class Foro {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_foro")  // 👈 aquí el nombre correcto en la BD
+    @Column(name = "id")  // 👈 aquí el nombre correcto en la BD
     private Integer id;
 
     @Column(nullable = false)
