@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aulanote - Profesor</title>
+  <link rel="stylesheet" href="css/ProfesorInicio.css">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <style>
+    /* Topbar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      background: #3b82f6; /* mismo color que el sidebar */
+      color: white;
+      padding: 12px 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    #toggleSidebar {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .topbar-right {
+      display: flex;
+      gap: 15px;
+    }
+
+    .topbar-right button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      transition: transform 0.2s;
+    }
+
+    .topbar-right button img {
+      width: 28px;
+      height: 28px;
+      filter: brightness(0) invert(1); /* esto hace que el icono se vea blanco */
+    }
+
+    .topbar-right button:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <h2 class="logo"><span class="logo-text">Aulanote</span><span class="logo-mini">A</span></h2>
+    <div class="menu">
+      <a href="#" class="selected" id="btn-inicio">
+        <img src="icons/notes-svgrepo-com.svg" alt="">
+        <span>Inicio</span>
+      </a>
+      <a href="#" id="btnCrear-tareas">
+        <img src="icons/task-past-due-symbolic-svgrepo-com.svg" alt="">
+        <span>Crear Tareas</span>
+      </a>
+      <a href="#" id="btn-foros">
+        <img src="icons/discussion-svgrepo-com.svg" alt="">
+        <span>Editar Foros</span>
+      </a>
+      <a href="#" id="btn-perfil">
+        <img src="icons/profile-1335-svgrepo-com.svg" alt="">
+        <span>Perfil</span>
+      </a>
+      <a href="#" id="btn-estudiantes">
+        <img src="icons/people-svgrepo-com.svg" alt="">
+        <span>Estudiantes</span>
+      </a>
+      <a href="#" id="btn-calificaciones">
+        <img src="icons/evaluation-exam-svgrepo-com.svg" alt="">
+        <span>Calificaciones</span>
+      </a>
+      <a href="#" id="btn-cursos">
+        <img src="icons/2904843.png" alt="">
+        <span>Cursos</span>
+      </a>
+    </div>
+    <div class="logout">
+  <a href="#" id="btn-logout">Cerrar sesión</a>
+</div>
+  </div>
+
+  <!-- Contenedor principal -->
+  <div class="content">
+    <!-- Encabezado superior -->
+    <header class="topbar">
+      <div class="topbar-left" style="display:flex; align-items:center; gap:15px;">
+        <button id="toggleSidebar">☰</button>
+        <h1 id="tituloSeccion">Bienvenido Profesor 👋</h1>
+      </div>
+      <div class="topbar-right">
+        <button id="btn-mensajes">
+          <img src="icons/mensaje.png" alt="Mensajes">
+        </button>
+        <button id="btn-notificaciones">
+          <img src="icons/notificacion.png" alt="Notificaciones">
+        </button>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <div class="main" id="main-content">
+      <!-- Pantalla de inicio -->
+      <div id="inicio-section">
+        <div id="calendar"></div>
+      </div>
+
+      <!-- Sección de Foros -->
+      <div id="foros-section" style="display: none; margin-top: 20px;">
+        <h2>📌 Foros</h2>
+        <div id="listaForos">
+          <p>Cargando foros...</p>
+        </div>
+        <hr>
+        <h3>➕ Crear un nuevo foro</h3>
+        <input type="text" id="tituloForo" placeholder="Título del foro"><br><br>
+        <textarea id="descripcionForo" placeholder="Descripción del foro"></textarea><br><br>
+        <button onclick="crearForo()">Crear foro</button>
+        <hr>
+        <div id="detalleForo">
+          <p>Selecciona un foro para ver los detalles aquí.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de Tareas -->
+  <div id="tareas-section" style="display: none; margin-top: 20px;">
+    <div class="card">
+      <h2>📋 Tareas</h2>
+      <div id="listaTareas">
+        <p>Cargando tareas...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de Calificaciones -->
+  <div id="calificaciones-section" style="display: none; margin-top: 20px;">
+    <div class="card">
+      <h2>⭐ Calificaciones</h2>
+      <div id="listaCalificaciones">
+        <p>Cargando calificaciones...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+  <!-- JS -->
+  <script src="js/ProfesorInicio.js"></script>
+  <script src="js/sidebar.js"></script>
+</body>
+</html>

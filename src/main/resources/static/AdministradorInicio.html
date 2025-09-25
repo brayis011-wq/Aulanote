@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aulanote - Administrador</title>
+  <link rel="stylesheet" href="css/AdministradorInicio.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <h2 class="logo">
+      <span class="logo-text">Aulanote</span>
+      <span class="logo-mini">A</span>
+    </h2>
+    <div class="menu">
+      <a href="#" class="selected" id="btn-inicio">
+        <img src="icons/notes-svgrepo-com.svg" alt="">
+        <span>Inicio</span>
+      </a>
+      <a href="#" id="btn-usuarios">
+        <img src="icons/people-svgrepo-com.svg" alt="">
+        <span>Usuarios</span>
+      </a>
+    </div>
+    <div class="logout">
+  <a href="#" id="btn-logout">Cerrar sesión</a>
+</div>
+
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <button id="toggleSidebar">☰</button>
+      <h1 id="tituloSeccion">Panel de Administrador</h1>
+      <div class="topbar-right">
+        <button id="btn-mensajes">
+          <img src="icons/mensaje.png" alt="Mensajes">
+        </button>
+        <button id="btn-notificaciones">
+          <img src="icons/notificacion.png" alt="Notificaciones">
+        </button>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <div class="main" id="main-content">
+      <!-- Inicio -->
+      <div id="inicio-section">
+        <div class="card">
+          <h2>Bienvenido Administrador 👋</h2>
+          <p>Aquí puedes gestionar usuarios y configurar el sistema.</p>
+        </div>
+      </div>
+
+      <!-- Usuarios -->
+      <div id="usuarios-section" style="display:none; margin-top:20px;">
+        <div class="card">
+          <h2>👥 Gestión de Usuarios</h2>
+          <div class="acciones">
+            <button onclick="mostrarFormularioUsuario()">➕ Añadir Usuario</button>
+            <button onclick="cargarUsuarios()">🔄 Refrescar</button>
+          </div>
+
+          <!-- Formulario -->
+<!-- Formulario -->
+            <div id="formularioUsuario" style="display:none; margin-top:15px;">
+            <!-- Campo oculto para ID -->
+            <input type="hidden" id="idUsuario">
+            <input type="text" id="nombreUsuario" placeholder="Nombre">
+            <input type="text" id="apellidoUsuario" placeholder="Apellido">
+            <input type="email" id="correoUsuario" placeholder="Correo">
+            <input type="text" id="cargoUsuario" placeholder="Cargo">
+            <input type="password" id="contrasenaUsuario" placeholder="Contraseña"> <!-- 👈 añadido -->
+            <button onclick="guardarUsuario()">Guardar</button>
+            <button onclick="limpiarFormulario()">Cancelar</button>
+            </div>
+
+
+          <!-- Tabla -->
+          <table class="tabla-usuarios" id="tablaUsuarios">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Correo</th>
+                <th>Cargo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="js/AdministradorInicio.js"></script>
+  <script src="js/sidebar.js"></script>
+</body>
+</html>
