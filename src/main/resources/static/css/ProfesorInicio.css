@@ -188,3 +188,170 @@ body {
   
   
 }
+/* Formulario */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+}
+
+textarea {
+  resize: none;
+}
+
+/* Botón */
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: scale(1.03);
+}
+/* Tabla de tareas */
+.tabla-tareas {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.tabla-tareas th, .tabla-tareas td {
+  border: 1px solid #e5e7eb;
+  padding: 10px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.tabla-tareas th {
+  background: #3b82f6;
+  color: white;
+}
+
+.tabla-tareas tr:nth-child(even) {
+  background: #f3f4f6;
+}
+
+/* Botones acciones */
+.btn-accion {
+  border: none;
+  padding: 6px 10px;
+  margin: 0 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-accion.editar {
+  background: #facc15;
+}
+
+.btn-accion.eliminar {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-accion:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+/* Contenedor de botones de filtro */
+#listaTareasContainer .filtros {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  justify-content: flex-start;
+}
+
+/* Botones generales */
+#listaTareasContainer .btn-secondary {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 8px;
+  background: #e9ecef;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+#listaTareasContainer .btn-secondary:hover {
+  background: #dee2e6;
+  transform: translateY(-2px);
+}
+
+/* Estilo cuando está activo */
+#listaTareasContainer .btn-secondary.active {
+  background: #007bff;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 3px 8px rgba(0, 123, 255, 0.4);
+}
+
+/* Encabezado */
+#listaTareasContainer h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #444;
+}
+.btn-cancelar {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: 0.3s;
+}
+.btn-cancelar:hover {
+  background-color: #ddd;
+}
+
+.alerta {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 5px;
+  color: #fff;
+  font-weight: 500;
+  z-index: 9999;
+  opacity: 0.9;
+}
+.alerta-success { background-color: #28a745; }
+.alerta-error { background-color: #dc3545; }
+.alerta-warning { background-color: #ffc107; color: #333; }
+.alerta-info { background-color: #17a2b8; }

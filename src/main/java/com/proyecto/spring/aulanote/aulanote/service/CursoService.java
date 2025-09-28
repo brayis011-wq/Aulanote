@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.proyecto.spring.aulanote.aulanote.entity.Curso;
+import com.proyecto.spring.aulanote.aulanote.entity.Usuario;
 import com.proyecto.spring.aulanote.aulanote.repository.CursoRepository;
+import com.proyecto.spring.aulanote.aulanote.repository.UsuarioRepository;
 
 @Service
 public class CursoService {
@@ -42,4 +44,16 @@ public class CursoService {
             return true;
         }).orElse(false);
     }
+    public List<Curso> listarCursosPorProfesor(Usuario profesor) {
+        return cursoRepository.findByProfesor(profesor);
+    }
+    @Autowired
+    private UsuarioRepository usuarioRepository; // Si tienes repo de Usuario
+
+    public List<Curso> listarCursosPorProfesorId(int profesorId) {
+        return usuarioRepository.findById(profesorId)
+                .map(profesor -> cursoRepository.findByProfesor(profesor))
+                .orElse(List.of()); // devuelve lista vacía si no existe profesor
+    }
+
 }

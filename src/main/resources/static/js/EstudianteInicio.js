@@ -91,7 +91,7 @@ function cargarProfesores() {
           <div style="background:white; border-radius:12px; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align:center; transition:transform .2s;">
             <img src="icons/profile-1335-svgrepo-com.svg" alt="Avatar" style="width:80px; height:80px; border-radius:50%; margin-bottom:10px;">
             <h2 style="color:#1e3a8a; font-size:18px; margin:5px 0;">${u.nombre} ${u.apellido}</h2>
-            <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Email:</strong> ${u.correo}</p>
+            <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Email:</strong> ${u.email}</p>
             <p style="font-size:13px; color:#888; margin:5px 0;">${u.cargo}</p>
             <button style="margin-top:10px; padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">
               Ver perfil

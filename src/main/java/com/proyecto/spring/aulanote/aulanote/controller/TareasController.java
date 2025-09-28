@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import com.proyecto.spring.aulanote.aulanote.entity.Tareas;
 import com.proyecto.spring.aulanote.aulanote.service.TareasService;
 
+
 @RestController
 @RequestMapping("/api/tareas")
 public class TareasController {
@@ -20,7 +21,6 @@ public class TareasController {
     public ResponseEntity<List<Tareas>> listarTareas() {
         return new ResponseEntity<>(tareasService.listarTareas(), HttpStatus.OK);
     }
-    
 
     @GetMapping("/buscar/{id}")
     public ResponseEntity<Tareas> buscarTarea(@PathVariable Integer id) {
@@ -29,21 +29,38 @@ public class TareasController {
                     .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
+    // 📌 Listar tareas de un profesor específico
+    @GetMapping("/profesor/{profesorId}")
+    public ResponseEntity<List<Tareas>> listarTareasPorProfesor(@PathVariable Integer profesorId) {
+        return new ResponseEntity<>(tareasService.listarPorProfesor(profesorId), HttpStatus.OK);
+    }
+
     @PostMapping("/crear")
     public ResponseEntity<Tareas> crearTarea(@RequestBody Tareas tarea) {
         return new ResponseEntity<>(tareasService.crearTarea(tarea), HttpStatus.CREATED);
     }
 
+    // 📌 Ahora pasamos profesorId en el body
     @PutMapping("/actualizar/{id}")
-    public ResponseEntity<Tareas> actualizarTarea(@PathVariable Integer id, @RequestBody Tareas tareaDetalles) {
-        return tareasService.actualizarTarea(id, tareaDetalles)
+    public ResponseEntity<Tareas> actualizarTarea(
+            @PathVariable Integer id,
+            @RequestBody Tareas tareaDetalles) {
+
+        if (tareaDetalles.getProfesorId() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        return tareasService.actualizarTarea(id, tareaDetalles, tareaDetalles.getProfesorId())
                 .map(updatedTarea -> new ResponseEntity<>(updatedTarea, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @DeleteMapping("/eliminar/{id}")
-    public ResponseEntity<Void> eliminarTarea(@PathVariable Integer id) {
-        if (tareasService.eliminarTarea(id)) {
+    @DeleteMapping("/eliminar/{id}/{profesorId}")
+    public ResponseEntity<Void> eliminarTarea(
+            @PathVariable Integer id,
+            @PathVariable Integer profesorId) {
+
+        if (tareasService.eliminarTarea(id, profesorId)) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);

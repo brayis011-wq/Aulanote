@@ -53,4 +53,10 @@ public class CursoController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+    @GetMapping("/profesor/{id}")
+    public ResponseEntity<List<Curso>> listarCursosPorProfesor(@PathVariable int id) {
+        List<Curso> cursos = cursoService.listarCursosPorProfesorId(id);
+        return new ResponseEntity<>(cursos, HttpStatus.OK);
+    }
+
 }
