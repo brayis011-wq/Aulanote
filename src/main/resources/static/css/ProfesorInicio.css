@@ -355,3 +355,185 @@ textarea {
 .alerta-error { background-color: #dc3545; }
 .alerta-warning { background-color: #ffc107; color: #333; }
 .alerta-info { background-color: #17a2b8; }
+/* ====== Foros ====== */
+#crearForo {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  max-width: 800px;
+  margin: 0 auto 25px;
+}
+
+#crearForo h3 {
+  margin-top: 0;
+  color: #3b82f6;
+}
+
+#crearForo input,
+#crearForo textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+#crearForo input:focus,
+#crearForo textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+}
+
+#btnCrearForo {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnCrearForo:hover {
+  background: #15803d;
+  transform: scale(1.03);
+}
+
+/* Tarjeta foro */
+.foro-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 0 auto 20px;
+  max-width: 800px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.foro-card h3 {
+  margin: 0 0 10px;
+  color: #1e3a8a;
+}
+
+.foro-card p {
+  color: #374151;
+}
+
+.foro-card small {
+  color: #6b7280;
+}
+
+/* Botones dentro de foros */
+.foro-card button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 6px;
+  transition: all 0.2s ease;
+}
+
+.foro-card .btn-toggle-comentarios {
+  background: #3b82f6;
+  color: white;
+}
+
+.foro-card .btn-toggle-comentarios:hover {
+  background: #2563eb;
+}
+
+.foro-card .btn-enviar-comentario {
+  background: #16a34a;
+  color: white;
+}
+
+.foro-card .btn-enviar-comentario:hover {
+  background: #15803d;
+}
+
+.foro-card .btn-editar {
+  background: #f59e0b;
+  color: white;
+}
+
+.foro-card .btn-editar:hover {
+  background: #d97706;
+}
+
+.foro-card .btn-eliminar {
+  background: #dc2626;
+  color: white;
+}
+
+.foro-card .btn-eliminar:hover {
+  background: #b91c1c;
+}
+
+/* Comentarios */
+.comentarios-container {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.comentarios-container div {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 0;
+}
+
+.comentarios-container div:last-child {
+  border-bottom: none;
+}
+
+.comentarios-container strong {
+  color: #1e3a8a;
+}
+
+.form-comentar {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.input-comentario {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+
+
+
+/* ===== Notificaciones flotantes ===== */
+.notificacion {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+
+.notificacion.mostrar {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.notificacion.exito {
+  background-color: #16a34a; /* verde */
+}
+
+.notificacion.error {
+  background-color: #dc2626; /* rojo */
+}

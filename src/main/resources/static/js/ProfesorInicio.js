@@ -366,7 +366,7 @@ async function eliminarTarea(id) {
       { id: "btnCrear-tareas", fn: () => { tituloSeccion.textContent = "Tareas"; cargarCrearTareas(); } },
       // por si cambiaste a "btn-tareas" en algún momento
       { id: "btn-tareas", fn: () => { tituloSeccion.textContent = "Tareas"; cargarCrearTareas(); } },
-      { id: "btn-foros", fn: () => { tituloSeccion.textContent = "Foros"; cargarForos(); } },
+      { id: "btn-foros", fn: () => { tituloSeccion.textContent = "Foros"; cargarForosProfesor(); } },
       { id: "btn-perfil", fn: () => { tituloSeccion.textContent = "Perfil"; cargarPerfilVista(); } },
       { id: "btn-estudiantes", fn: () => { tituloSeccion.textContent = "Estudiantes"; cargarestudiantes(); } },
       { id: "btn-calificaciones", fn: () => { tituloSeccion.textContent = "Calificaciones"; cargarCalificaciones(); } },
@@ -504,7 +504,7 @@ function cargarCalificaciones() {
 }
 
 // Mostrar calificaciones y permitir edición
-function verCalificacionesCurso(id_Curso, nombreCurso) {
+function verCalificacionesCurso(idCurso, nombreCurso) {
   const detalleDiv = document.getElementById("detalleCalificaciones");
   detalleDiv.innerHTML = `
     <h2 class="titulo-curso">📘 Calificaciones de ${nombreCurso}</h2>
@@ -582,7 +582,362 @@ function verCalificacionesCurso(id_Curso, nombreCurso) {
 
 
 
-  function cargarForos() { mainContent.innerHTML = "<h1>Foros</h1><p>Sección en construcción...</p>"; }
+// ======================
+// Cargar Foros Profesor
+// ======================
+// ======================
+// Función para mostrar notificación
+// ======================
+function mostrarNotificacion(mensaje, tipo = "exito") {
+  const notificacion = document.createElement("div");
+  notificacion.classList.add("notificacion", tipo);
+  notificacion.textContent = mensaje;
+
+  // estilos básicos
+  notificacion.style.position = "fixed";
+  notificacion.style.top = "20px";
+  notificacion.style.right = "20px";
+  notificacion.style.padding = "12px 18px";
+  notificacion.style.borderRadius = "8px";
+  notificacion.style.color = "#fff";
+  notificacion.style.fontSize = "14px";
+  notificacion.style.fontWeight = "bold";
+  notificacion.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)";
+  notificacion.style.opacity = "0";
+  notificacion.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+  notificacion.style.zIndex = "9999";
+
+  if (tipo === "exito") {
+    notificacion.style.backgroundColor = "#16a34a"; // verde
+  } else if (tipo === "error") {
+    notificacion.style.backgroundColor = "#dc2626"; // rojo
+  } else {
+    notificacion.style.backgroundColor = "#3b82f6"; // azul por defecto
+  }
+
+  document.body.appendChild(notificacion);
+
+  // mostrar animado
+  setTimeout(() => {
+    notificacion.style.opacity = "1";
+    notificacion.style.transform = "translateY(0)";
+  }, 50);
+
+  // quitar después de 3s
+  setTimeout(() => {
+    notificacion.style.opacity = "0";
+    notificacion.style.transform = "translateY(-20px)";
+    setTimeout(() => notificacion.remove(), 300);
+  }, 3000);
+}
+
+// ======================
+// Función para cargar comentarios
+// ======================
+// ======================
+// Función para cargar comentarios
+// ======================
+function cargarComentarios(foroId, container) {
+  fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
+    .then(r => {
+      if (!r.ok) throw new Error("Error al cargar comentarios");
+      return r.json();
+    })
+    .then(comentarios => {
+      container.innerHTML = "";
+
+      if (!comentarios || comentarios.length === 0) {
+        container.innerHTML = "<p>No hay comentarios todavía.</p>";
+        return;
+      }
+
+      comentarios.forEach(c => {
+        const divC = document.createElement("div");
+        divC.style.borderTop = "1px solid #eee";
+        divC.style.padding = "5px 0";
+
+        const nombreAutor = c.autor || "Usuario desconocido";
+
+        divC.innerHTML = `
+          <strong>${nombreAutor}:</strong>
+          <span class="comentario-texto">${c.contenido}</span>
+          <br>
+          <small>${c.fechaCreacion ? c.fechaCreacion : ""}</small>
+          <div class="acciones-comentario" style="margin-top:5px;"></div>
+        `;
+
+        const acciones = divC.querySelector(".acciones-comentario");
+
+        // ⚡ Diferenciamos si el comentario es mío
+        if (c.usuarioId === profesorGlobal.id) {
+// --- Botón editar ---
+btnEditarC.addEventListener("click", () => {
+  if (btnEditarC.textContent === "Editar") {
+    textoComentario.contentEditable = true;
+    textoComentario.style.border = "1px solid #ccc";
+    btnEditarC.textContent = "Guardar";
+  } else {
+    const nuevoContenido = textoComentario.textContent.trim();
+    fetch(`http://localhost:8080/api/comentarios/editar/${c.idComentario}/${profesorGlobal.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contenido: nuevoContenido })
+    })
+      .then(resp => {
+        if (!resp.ok) throw new Error("Error al editar comentario");
+        textoComentario.contentEditable = false;
+        textoComentario.style.border = "none";
+        btnEditarC.textContent = "Editar";
+        mostrarNotificacion("✏️ Comentario actualizado", "exito");
+      })
+      .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+  }
+});
+
+// --- Botón eliminar ---
+btnEliminarC.addEventListener("click", () => {
+  if (!confirm("¿Eliminar este comentario?")) return;
+  fetch(`http://localhost:8080/api/comentarios/eliminar/${c.idComentario}/${profesorGlobal.id}`, {
+    method: "DELETE"
+  })
+    .then(resp => {
+      if (!resp.ok) throw new Error("Error al eliminar comentario");
+      cargarComentarios(foroId, container);
+      mostrarNotificacion("🗑️ Comentario eliminado", "exito");
+    })
+    .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+});
+
+        } else {
+          // --- Si NO es mío → solo botón eliminar (si soy profesor/admin)
+          const btnEliminarC = document.createElement("button");
+          btnEliminarC.textContent = "Eliminar";
+          btnEliminarC.style.cssText = "padding:2px 6px; background:#dc2626; color:white; border:none; border-radius:3px; cursor:pointer;";
+          acciones.appendChild(btnEliminarC);
+
+          btnEliminarC.addEventListener("click", () => {
+            if (!confirm("¿Eliminar este comentario?")) return;
+            fetch(`http://localhost:8080/api/comentarios/eliminar/${c.idComentario}?usuarioId=${profesorGlobal.id}`, {
+              method: "DELETE"
+            })
+              .then(resp => {
+                if (!resp.ok) throw new Error("Error al eliminar comentario");
+                cargarComentarios(foroId, container);
+                mostrarNotificacion("🗑️ Comentario eliminado", "exito");
+              })
+              .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+          });
+        }
+
+        container.appendChild(divC);
+      });
+    })
+    .catch(err => {
+      console.error("Error cargando comentarios:", err);
+      container.innerHTML = "<p style='color:red;'>❌ No se pudieron cargar los comentarios</p>";
+    });
+}
+
+
+
+
+// ======================
+// Función principal cargar foros
+// ======================
+function cargarForosProfesor() {
+  mainContent.innerHTML = `
+    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">Foros</h1>
+    <div id="crearForo" style="margin-bottom:20px; padding:15px; border:1px solid #ccc; border-radius:10px; background:#f9fafb;">
+      <h3>Crear nuevo foro</h3>
+      <input type="text" id="tituloForo" placeholder="Título del foro" style="width:100%; padding:6px; margin-bottom:10px;">
+      <textarea id="descripcionForo" placeholder="Descripción" style="width:100%; padding:6px; margin-bottom:10px;"></textarea>
+      <button id="btnCrearForo" style="padding:8px 12px; background:#16a34a; color:white; border:none; border-radius:5px; cursor:pointer;">Crear Foro</button>
+    </div>
+    <div id="listaForos"></div>
+  `;
+
+  const contenedor = document.getElementById("listaForos");
+  contenedor.innerHTML = "<p>Cargando foros...</p>";
+
+  // ======================
+  // Crear foro
+  // ======================
+  document.getElementById("btnCrearForo").addEventListener("click", () => {
+    const titulo = document.getElementById("tituloForo").value.trim();
+    const descripcion = document.getElementById("descripcionForo").value.trim();
+    if (!titulo || !descripcion) return mostrarNotificacion("⚠️ Completa todos los campos", "error");
+
+    const nuevoForo = { 
+      titulo, 
+      descripcion, 
+      autorId: profesorGlobal.id   // 👈 importante
+    };
+
+    fetch("http://localhost:8080/api/foros/crear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nuevoForo)
+    })
+    .then(resp => {
+      if (!resp.ok) throw new Error("Error al crear foro");
+      document.getElementById("tituloForo").value = "";
+      document.getElementById("descripcionForo").value = "";
+      mostrarNotificacion("✅ Foro creado exitosamente", "exito");
+      cargarForosProfesor(); // refrescar
+    })
+    .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+  });
+
+  // ======================
+  // Cargar foros
+  // ======================
+  fetch("http://localhost:8080/api/foros")
+    .then(r => r.json())
+    .then(foros => {
+      contenedor.innerHTML = "";
+
+      if (!foros || foros.length === 0) {
+        contenedor.innerHTML = "<p>No hay foros creados todavía.</p>";
+        return;
+      }
+
+      foros.forEach(foro => {
+        const id = foro.id;
+        const titulo = foro.titulo || "Sin título";
+        const descripcion = foro.descripcion || "Sin descripción";
+        const fecha = foro.fechaCreacion ? new Date(foro.fechaCreacion).toLocaleString() : "Sin fecha";
+
+        // Tarjeta foro
+        const divForo = document.createElement("div");
+        divForo.classList.add("foro-card");
+        divForo.style.cssText = `
+          border:1px solid #ccc; padding:15px; margin-bottom:15px; 
+          border-radius:10px; background:#fff;
+        `;
+        divForo.innerHTML = `
+          <h3 contenteditable="false" class="foro-titulo">${titulo}</h3>
+          <p contenteditable="false" class="foro-descripcion">${descripcion}</p>
+          <small>Creado el: ${fecha}</small>
+          <br><br>
+          <button class="btn-toggle-comentarios" style="padding:6px 10px; background:#3b82f6; color:white; border:none; border-radius:5px; cursor:pointer; margin-bottom:10px;">Mostrar comentarios</button>
+          <div class="comentarios-container" style="margin-top:10px; display:none;"></div>
+          <div class="form-comentar" style="margin-top:10px; display:none;">
+            <input type="text" class="input-comentario" placeholder="Escribe tu comentario..." style="width:80%; padding:6px; border-radius:5px; border:1px solid #ccc;">
+            <button class="btn-enviar-comentario" style="padding:6px 10px; background:#16a34a; color:white; border:none; border-radius:5px; cursor:pointer;">Comentar</button>
+          </div>
+          <div class="acciones-foro" style="margin-top:10px;">
+            <button class="btn-editar" style="padding:6px 10px; background:#f59e0b; color:white; border:none; border-radius:5px; cursor:pointer;">Editar</button>
+            <button class="btn-eliminar" style="padding:6px 10px; background:#dc2626; color:white; border:none; border-radius:5px; cursor:pointer;">Eliminar</button>
+          </div>
+        `;
+
+        // --- Botón mostrar comentarios ---
+        const btnToggle = divForo.querySelector(".btn-toggle-comentarios");
+        const comentariosContainer = divForo.querySelector(".comentarios-container");
+        const formComentar = divForo.querySelector(".form-comentar");
+        const inputComentario = divForo.querySelector(".input-comentario");
+        const btnEnviar = divForo.querySelector(".btn-enviar-comentario");
+
+        btnToggle.addEventListener("click", () => {
+          if (comentariosContainer.style.display === "none") {
+            comentariosContainer.style.display = "block";
+            formComentar.style.display = "flex";
+            comentariosContainer.innerHTML = "<p>Cargando comentarios...</p>";
+
+            cargarComentarios(id, comentariosContainer);
+            btnToggle.textContent = "Ocultar comentarios";
+          } else {
+            comentariosContainer.style.display = "none";
+            formComentar.style.display = "none";
+            btnToggle.textContent = "Mostrar comentarios";
+          }
+        });
+
+        // --- Enviar comentario ---
+        btnEnviar.addEventListener("click", () => {
+          const contenido = inputComentario.value.trim();
+          if (!contenido) return mostrarNotificacion("⚠️ Escribe un comentario", "error");
+
+          const nuevoComentario = { 
+            contenido, 
+            foro: { id }, 
+            usuario: { id: profesorGlobal.id } 
+          };
+
+          fetch(`http://localhost:8080/api/comentarios/foro/${id}/usuario/${profesorGlobal.id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nuevoComentario)
+          })
+          .then(resp => {
+            if (!resp.ok) throw new Error("Error al enviar comentario");
+            inputComentario.value = "";
+            mostrarNotificacion("💬 Comentario agregado", "exito");
+            cargarComentarios(id, comentariosContainer);
+          })
+          .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+        });
+
+        // --- Editar foro ---
+        const btnEditar = divForo.querySelector(".btn-editar");
+        btnEditar.addEventListener("click", () => {
+          const tituloEl = divForo.querySelector(".foro-titulo");
+          const descEl = divForo.querySelector(".foro-descripcion");
+
+          if (btnEditar.textContent === "Editar") {
+            tituloEl.contentEditable = true;
+            descEl.contentEditable = true;
+            tituloEl.style.border = "1px solid #ccc";
+            descEl.style.border = "1px solid #ccc";
+            btnEditar.textContent = "Guardar";
+          } else {
+            const nuevoTitulo = tituloEl.textContent.trim();
+            const nuevaDesc = descEl.textContent.trim();
+
+            fetch(`http://localhost:8080/api/foros/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ titulo: nuevoTitulo, descripcion: nuevaDesc, autorId: profesorGlobal.id })
+            })
+            .then(resp => {
+              if (!resp.ok) throw new Error("Error al editar foro");
+              tituloEl.contentEditable = false;
+              descEl.contentEditable = false;
+              tituloEl.style.border = "none";
+              descEl.style.border = "none";
+              btnEditar.textContent = "Editar";
+              mostrarNotificacion("✏️ Foro actualizado", "exito");
+            })
+            .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+          }
+        });
+
+        // --- Eliminar foro ---
+        const btnEliminar = divForo.querySelector(".btn-eliminar");
+        btnEliminar.addEventListener("click", () => {
+          if (!confirm("¿Eliminar este foro?")) return;
+
+          fetch(`http://localhost:8080/api/foros/${id}`, { method: "DELETE" })
+            .then(resp => {
+              if (!resp.ok) throw new Error("Error al eliminar foro");
+              cargarForosProfesor();
+              mostrarNotificacion("🗑️ Foro eliminado", "exito");
+            })
+            .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+        });
+
+        contenedor.appendChild(divForo);
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      contenedor.innerHTML = "<p style='color:red;'>Error al cargar los foros</p>";
+    });
+}
+
+
+
+
   function cargarCursos() { mainContent.innerHTML = "<h1>Cursos</h1><p>Sección en construcción...</p>"; }
 
   // ----------------------------
