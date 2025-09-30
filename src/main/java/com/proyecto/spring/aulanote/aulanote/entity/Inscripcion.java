@@ -1,7 +1,6 @@
 package com.proyecto.spring.aulanote.aulanote.entity;
 
 import java.time.LocalDateTime;
-
 import jakarta.persistence.*;
 
 @Entity
@@ -13,20 +12,18 @@ public class Inscripcion {
     @Column(name = "id_inscripcion")
     private Integer idInscripcion;
 
-    // Relación con Usuario (muchas inscripciones pueden pertenecer a un mismo usuario)
     @ManyToOne
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
 
-    // Relación con Curso (muchas inscripciones pueden pertenecer a un mismo curso)
     @ManyToOne
     @JoinColumn(name = "id_curso", nullable = false)
     private Curso curso;
 
-    @Column(name = "fecha_inscripcion", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "fecha_inscripcion", nullable = false, insertable = false, updatable = false)
     private LocalDateTime fechaInscripcion;
 
-    // Getters y Setters
+    // ====== Getters y Setters ======
     public Integer getIdInscripcion() {
         return idInscripcion;
     }

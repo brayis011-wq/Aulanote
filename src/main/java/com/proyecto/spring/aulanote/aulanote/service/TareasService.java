@@ -26,44 +26,41 @@ public class TareasService {
     public Optional<Tareas> obtenerTareaPorId(Integer id) {
         return tareasRepository.findById(id);
     }
-   
-
 
     public List<Tareas> listarPorProfesor(Integer profesorId) {
         return tareasRepository.findByProfesorId(profesorId);
-}
+    }
 
-public Optional<Tareas> actualizarTarea(Integer id, Tareas tareaDetalles, Integer profesorId) {
-    return tareasRepository.findById(id).map(tarea -> {
-        if (!tarea.getProfesorId().equals(profesorId)) {
-            throw new RuntimeException("❌ No puedes modificar esta tarea, no es tuya.");
-        }
-        tarea.setNombreActividad(tareaDetalles.getNombreActividad());
-        tarea.setDescripcion(tareaDetalles.getDescripcion());
-        tarea.setFechaLimite(tareaDetalles.getFechaLimite());
-        return tareasRepository.save(tarea);
-    });
-}
+    public List<Tareas> listarPorCurso(Integer cursoId) {
+        return tareasRepository.findByCurso_IdCurso(cursoId);
+    }
 
-public Boolean eliminarTarea(Integer id, Integer profesorId) {
-    return tareasRepository.findById(id).map(tarea -> {
-        if (!tarea.getProfesorId().equals(profesorId)) {
-            throw new RuntimeException("❌ No puedes eliminar esta tarea, no es tuya.");
-        }
-        tareasRepository.delete(tarea);
-        return true;
-    }).orElse(false);
-}
+    public List<Tareas> listarPorProfesorYCurso(Integer profesorId, Integer cursoId) {
+        return tareasRepository.findByProfesorIdAndCurso_IdCurso(profesorId, cursoId);
+    }
 
-
-
-    // --- Métodos personalizados ---
-    public Optional<Tareas> calificarTarea(Integer id, String calificacion) {
+    public Optional<Tareas> actualizarTarea(Integer id, Tareas tareaDetalles, Integer profesorId) {
         return tareasRepository.findById(id).map(tarea -> {
-            // Si quieres guardar la calificación, necesitaríamos un campo en la entidad
-            // Ejemplo: tarea.setCalificacion(calificacion);
+            if (!tarea.getProfesorId().equals(profesorId)) {
+                throw new RuntimeException("❌ No puedes modificar esta tarea, no es tuya.");
+            }
+            tarea.setNombreActividad(tareaDetalles.getNombreActividad());
+            tarea.setDescripcion(tareaDetalles.getDescripcion());
+            tarea.setFechaLimite(tareaDetalles.getFechaLimite());
+            tarea.setCurso(tareaDetalles.getCurso()); // 📌 permitir cambiar curso
             return tareasRepository.save(tarea);
         });
     }
+
+    public Boolean eliminarTarea(Integer id, Integer profesorId) {
+        return tareasRepository.findById(id).map(tarea -> {
+            if (!tarea.getProfesorId().equals(profesorId)) {
+                throw new RuntimeException("❌ No puedes eliminar esta tarea, no es tuya.");
+            }
+            tareasRepository.delete(tarea);
+            return true;
+        }).orElse(false);
+    }
     
 }
+

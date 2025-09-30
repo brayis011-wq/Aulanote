@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+
 import com.proyecto.spring.aulanote.aulanote.entity.Tareas;
 import com.proyecto.spring.aulanote.aulanote.service.TareasService;
 
@@ -16,7 +18,7 @@ public class TareasController {
 
     @Autowired
     private TareasService tareasService;
-
+    
     @GetMapping
     public ResponseEntity<List<Tareas>> listarTareas() {
         return new ResponseEntity<>(tareasService.listarTareas(), HttpStatus.OK);
@@ -29,10 +31,21 @@ public class TareasController {
                     .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    // 📌 Listar tareas de un profesor específico
     @GetMapping("/profesor/{profesorId}")
     public ResponseEntity<List<Tareas>> listarTareasPorProfesor(@PathVariable Integer profesorId) {
         return new ResponseEntity<>(tareasService.listarPorProfesor(profesorId), HttpStatus.OK);
+    }
+
+    @GetMapping("/curso/{cursoId}")
+    public ResponseEntity<List<Tareas>> listarTareasPorCurso(@PathVariable Integer cursoId) {
+        return new ResponseEntity<>(tareasService.listarPorCurso(cursoId), HttpStatus.OK);
+    }
+
+    @GetMapping("/profesor/{profesorId}/curso/{cursoId}")
+    public ResponseEntity<List<Tareas>> listarTareasPorProfesorYCurso(
+            @PathVariable Integer profesorId,
+            @PathVariable Integer cursoId) {
+        return new ResponseEntity<>(tareasService.listarPorProfesorYCurso(profesorId, cursoId), HttpStatus.OK);
     }
 
     @PostMapping("/crear")
@@ -40,7 +53,6 @@ public class TareasController {
         return new ResponseEntity<>(tareasService.crearTarea(tarea), HttpStatus.CREATED);
     }
 
-    // 📌 Ahora pasamos profesorId en el body
     @PutMapping("/actualizar/{id}")
     public ResponseEntity<Tareas> actualizarTarea(
             @PathVariable Integer id,
@@ -66,11 +78,6 @@ public class TareasController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    // --- Método personalizado ---
-    @PutMapping("/calificar/{id}")
-    public ResponseEntity<Tareas> calificarTarea(@PathVariable Integer id, @RequestParam String calificacion) {
-        return tareasService.calificarTarea(id, calificacion)
-                .map(tareaCalificada -> new ResponseEntity<>(tareaCalificada, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
+
+
 }

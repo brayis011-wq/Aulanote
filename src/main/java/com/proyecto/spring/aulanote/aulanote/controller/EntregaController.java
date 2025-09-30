@@ -23,6 +23,7 @@ public class EntregaController {
     @Autowired
     private EntregaRepository entregaRepository; // ✅ inyección del repositorio
 
+    
     // ✅ Listar todas las entregas
     @GetMapping
     public ResponseEntity<List<Entrega>> listarEntregas() {

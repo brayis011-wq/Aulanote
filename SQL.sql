@@ -36,6 +36,15 @@ CREATE TABLE cursos (
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+INSERT INTO cursos (nombre, descripcion, profesor_id) VALUES
+('Matemáticas Básicas', 'Curso inicial de matemáticas para principiantes', 2),
+('Programación en Java', 'Introducción a Java y programación orientada a objetos', 2),
+('Física I', 'Conceptos fundamentales de la mecánica clásica', 4),
+('Base de Datos', 'Diseño y modelado de bases de datos relacionales', 6),
+('Redes de Computadores', 'Principios básicos de redes y protocolos de comunicación', 8),
+('Inteligencia Artificial', 'Fundamentos de AI y machine learning', 10);
+
+
 -- Datos de ejemplo para cursos
 INSERT INTO cursos (nombre, descripcion, fecha_creacion, profesor_id) VALUES 
 ('Matemáticas I', 'Curso introductorio a álgebra, trigonometría y funciones.', NOW(), 2),
@@ -55,6 +64,15 @@ CREATE TABLE inscripciones (
     CONSTRAINT fk_inscripcion_curso FOREIGN KEY (id_curso) REFERENCES cursos(id_curso)
         ON DELETE CASCADE ON UPDATE CASCADE
 );
+USE aulanote2;  
+-- Inserción de inscripciones para estudiantes
+INSERT INTO inscripciones (id_usuario, id_curso) VALUES
+((SELECT Id FROM usuario WHERE correo = 'sofia.martinez@example.com'), 1),
+((SELECT Id FROM usuario WHERE correo = 'valentina.lopez@example.com'), 1),
+((SELECT Id FROM usuario WHERE correo = 'camila.rodriguez@example.com'), 2),
+((SELECT Id FROM usuario WHERE correo = 'isabella.ramirez@example.com'), 2),
+((SELECT Id FROM usuario WHERE correo = 'laura.castillo@example.com'), 3);
+
 
 -- Tabla tareas
 CREATE TABLE tareas (

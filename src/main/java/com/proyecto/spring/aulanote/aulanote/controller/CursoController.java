@@ -2,12 +2,14 @@ package com.proyecto.spring.aulanote.aulanote.controller;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.proyecto.spring.aulanote.aulanote.dto.CursoDTO;
 import com.proyecto.spring.aulanote.aulanote.entity.Curso;
 import com.proyecto.spring.aulanote.aulanote.service.CursoService;
 
@@ -18,32 +20,66 @@ public class CursoController {
     @Autowired
     private CursoService cursoService;
 
+    // 🔹 Listar todos los cursos (en DTO)
     @GetMapping
-    public ResponseEntity<List<Curso>> listarCursos() {
+    public ResponseEntity<List<CursoDTO>> listarCursos() {
         List<Curso> cursos = cursoService.listarCursos();
-        return new ResponseEntity<>(cursos, HttpStatus.OK);
+        List<CursoDTO> cursosDTO = cursos.stream()
+                .map(c -> new CursoDTO(
+                        c.getIdCurso(),
+                        c.getNombre(),
+                        c.getDescripcion(),
+                        c.getFechaCreacion(),
+                        c.getProfesor().getNombre() + " " + c.getProfesor().getApellido()
+                ))
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(cursosDTO, HttpStatus.OK);
     }
 
+    // 🔹 Buscar curso por ID (en DTO)
     @GetMapping("/buscar/{id}")
-    public ResponseEntity<Curso> buscarCurso(@PathVariable int id) {
+    public ResponseEntity<CursoDTO> buscarCurso(@PathVariable int id) {
         Optional<Curso> curso = cursoService.obtenerCursoPorId(id);
-        return curso.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+        return curso.map(c -> new ResponseEntity<>(new CursoDTO(
+                c.getIdCurso(),
+                c.getNombre(),
+                c.getDescripcion(),
+                c.getFechaCreacion(),
+                c.getProfesor().getNombre() + " " + c.getProfesor().getApellido()
+        ), HttpStatus.OK))
+        .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
+    // 🔹 Crear curso (se devuelve en DTO)
     @PostMapping("/crear")
-    public ResponseEntity<Curso> crearCurso(@RequestBody Curso curso) {
+    public ResponseEntity<CursoDTO> crearCurso(@RequestBody Curso curso) {
         Curso nuevoCurso = cursoService.crearCurso(curso);
-        return new ResponseEntity<>(nuevoCurso, HttpStatus.CREATED);
+        CursoDTO dto = new CursoDTO(
+                nuevoCurso.getIdCurso(),
+                nuevoCurso.getNombre(),
+                nuevoCurso.getDescripcion(),
+                nuevoCurso.getFechaCreacion(),
+                nuevoCurso.getProfesor().getNombre() + " " + nuevoCurso.getProfesor().getApellido()
+        );
+        return new ResponseEntity<>(dto, HttpStatus.CREATED);
     }
 
+    // 🔹 Actualizar curso
     @PutMapping("/actualizar/{id}")
-    public ResponseEntity<Curso> actualizarCurso(@PathVariable int id, @RequestBody Curso cursoDetalles) {
+    public ResponseEntity<CursoDTO> actualizarCurso(@PathVariable int id, @RequestBody Curso cursoDetalles) {
         return cursoService.actualizarCurso(id, cursoDetalles)
-                .map(updatedCurso -> new ResponseEntity<>(updatedCurso, HttpStatus.OK))
+                .map(updated -> new ResponseEntity<>(new CursoDTO(
+                        updated.getIdCurso(),
+                        updated.getNombre(),
+                        updated.getDescripcion(),
+                        updated.getFechaCreacion(),
+                        updated.getProfesor().getNombre() + " " + updated.getProfesor().getApellido()
+                ), HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
+    // 🔹 Eliminar curso
     @DeleteMapping("/eliminar/{id}")
     public ResponseEntity<Void> eliminarCurso(@PathVariable int id) {
         Boolean eliminado = cursoService.eliminarCurso(id);
@@ -53,10 +89,21 @@ public class CursoController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
-    @GetMapping("/profesor/{id}")
-    public ResponseEntity<List<Curso>> listarCursosPorProfesor(@PathVariable int id) {
-        List<Curso> cursos = cursoService.listarCursosPorProfesorId(id);
-        return new ResponseEntity<>(cursos, HttpStatus.OK);
-    }
 
+    // 🔹 Listar cursos de un profesor específico (en DTO)
+    @GetMapping("/profesor/{id}")
+    public ResponseEntity<List<CursoDTO>> listarCursosPorProfesor(@PathVariable int id) {
+        List<Curso> cursos = cursoService.listarCursosPorProfesorId(id);
+        List<CursoDTO> cursosDTO = cursos.stream()
+                .map(c -> new CursoDTO(
+                        c.getIdCurso(),
+                        c.getNombre(),
+                        c.getDescripcion(),
+                        c.getFechaCreacion(),
+                        c.getProfesor().getNombre() + " " + c.getProfesor().getApellido()
+                ))
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(cursosDTO, HttpStatus.OK);
+    }
 }

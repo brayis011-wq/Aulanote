@@ -1,12 +1,7 @@
 package com.proyecto.spring.aulanote.aulanote.entity;
 
 import java.time.LocalDateTime;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "tareas")
@@ -27,6 +22,11 @@ public class Tareas {
 
     @Column(name = "profesor_id", nullable = false)
     private Integer profesorId;
+
+    // 📌 Relación con curso
+    @ManyToOne
+    @JoinColumn(name = "curso_id", nullable = false) 
+    private Curso curso;
 
     // Getters y Setters
     public Integer getId() {
@@ -67,5 +67,13 @@ public class Tareas {
 
     public void setProfesorId(Integer profesorId) {
         this.profesorId = profesorId;
+    }
+
+    public Curso getCurso() {
+        return curso;
+    }
+
+    public void setCurso(Curso curso) {
+        this.curso = curso;
     }
 }

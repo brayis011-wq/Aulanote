@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- Estado global ---
   let profesorGlobal = { id: null, nombre: "" };
-  let editingTareaId = null; // null => crear, number => editar
+
 
   // ----------------------------
   // Helpers de fecha
@@ -76,135 +76,137 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // ----------------------------
-  // Crear / Editar Tareas (muestra formulario + contenedor lista)
-  // ----------------------------
-  function cargarCrearTareas(tareaToEdit = null) {
-    editingTareaId = tareaToEdit ? tareaToEdit.id : null;
 
-    mainContent.innerHTML = `
-      <div class="card">
-        <h2>${editingTareaId ? "Editar Tarea" : "Crear Nueva Tarea"}</h2>
-        <form id="formCrearTarea" class="formulario">
-          <div class="form-group">
-            <label for="nombreActividad">Nombre de la Actividad</label>
-            <input type="text" id="nombreActividad" required>
-          </div>
+let editingTareaId = null; // para saber si estoy editando o creando
 
-          <div class="form-group">
-            <label for="descripcion">Descripción</label>
-            <textarea id="descripcion" rows="4" required></textarea>
-          </div>
+// ===============================
+// CREAR / EDITAR TAREA
+// ===============================
+async function cargarCrearTareas(tareaToEdit = null) {
+  editingTareaId = tareaToEdit ? tareaToEdit.id : null;
 
-          <div class="form-group">
-            <label for="fechaLimite">Fecha Límite</label>
-            <input type="datetime-local" id="fechaLimite" required>
-          </div>
+  mainContent.innerHTML = `
+    <div class="card">
+      <h2>${editingTareaId ? "Editar Tarea" : "Crear Nueva Tarea"}</h2>
+      <form id="formCrearTarea" class="formulario">
+        <div class="form-group">
+          <label for="nombreActividad">Nombre de la Actividad</label>
+          <input type="text" id="nombreActividad" required>
+        </div>
 
-          <div class="form-group">
-            <label for="profesor">Profesor</label>
-            <input type="text" id="profesor" value="${profesorGlobal.nombre}" readonly>
-          </div>
+        <div class="form-group">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" rows="4" required></textarea>
+        </div>
 
-          <div style="display:flex; gap:8px; margin-top:12px;">
-            <button type="submit" class="btn-primary">${editingTareaId ? "Actualizar" : "Crear"}</button>
-            <button type="button" id="btn-cancelar" class="btn-secondary">Cancelar</button>
-          </div>
-        </form>
-      </div>
+        <div class="form-group">
+          <label for="fechaLimite">Fecha Límite</label>
+          <input type="datetime-local" id="fechaLimite" required>
+        </div>
 
-      <!-- Contenedor de lista (se rellena por cargarListaTareas) -->
-      <div id="listaTareasContainer"></div>
-    `;
+        <div class="form-group">
+          <label for="cursoId">Curso</label>
+          <select id="cursoId" required>
+            <option value="">-- Selecciona un curso --</option>
+          </select>
+        </div>
 
-    // Si viene tarea para editar, precargar valores
-    if (tareaToEdit) {
-      const nombre = tareaToEdit.nombreActividad || "";
-      const desc = tareaToEdit.descripcion || "";
-      const fecha = tareaToEdit.fechaLimite ? toInputDatetimeLocal(tareaToEdit.fechaLimite) : "";
-      document.getElementById("nombreActividad").value = nombre;
-      document.getElementById("descripcion").value = desc;
-      document.getElementById("fechaLimite").value = fecha;
-    }
+        <div class="form-group">
+          <label for="profesor">Profesor</label>
+          <input type="text" id="profesor" value="${profesorGlobal.nombre}" readonly>
+        </div>
 
-    // Cancelar vuelve a la lista (modo crear)
-    const btnCancelar = document.getElementById("btn-cancelar");
-    if (btnCancelar) btnCancelar.addEventListener("click", () => {
-      editingTareaId = null;
-      document.getElementById("formCrearTarea").reset();
-      cargarListaTareas();
-    });
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button type="submit" class="btn-primary">${editingTareaId ? "Actualizar" : "Crear"}</button>
+          <button type="button" id="btn-cancelar" class="btn-secondary">Cancelar</button>
+        </div>
+      </form>
+    </div>
 
-    // Submit del formulario (crear o actualizar)
-    const form = document.getElementById("formCrearTarea");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const payload = {
-        nombreActividad: document.getElementById("nombreActividad").value,
-        descripcion: document.getElementById("descripcion").value,
-        fechaLimite: document.getElementById("fechaLimite").value,
-        profesorId: profesorGlobal.id
-      };
+    <!-- Contenedor de lista -->
+    <div id="listaTareasContainer"></div>
+  `;
 
-      try {
-        if (editingTareaId) {
-          const resp = await fetch(`/api/tareas/actualizar/${editingTareaId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          if (resp.ok) {
-            alert("✅ Tarea actualizada");
-            editingTareaId = null;
-            form.reset();
-            cargarListaTareas();
-          } else {
-            console.error(await resp.text());
-            alert("❌ Error al actualizar la tarea");
-          }
-        } else {
-          const resp = await fetch("/api/tareas/crear", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          if (resp.ok) {
-            const nueva = await resp.json();
-            alert(`✅ Tarea creada (ID: ${nueva.id})`);
-            form.reset();
-            cargarListaTareas();
-          } else {
-            console.error(await resp.text());
-            alert("❌ Error al crear la tarea");
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        alert("⚠️ Error de conexión con el servidor");
-      }
-    });
+  await cargarCursosSelect();
 
-    cargarListaTareas("mias");
+  // precargar valores si estamos editando
+  if (tareaToEdit) {
+    document.getElementById("nombreActividad").value = tareaToEdit.nombreActividad || "";
+    document.getElementById("descripcion").value = tareaToEdit.descripcion || "";
+    document.getElementById("fechaLimite").value = tareaToEdit.fechaLimite
+      ? toInputDatetimeLocal(tareaToEdit.fechaLimite)
+      : "";
+    document.getElementById("cursoId").value = tareaToEdit.curso ? tareaToEdit.curso.idCurso : "";
   }
 
-  // ----------------------------
-  // Lista de Tareas (renderiza dentro de #listaTareasContainer)
-  // ----------------------------
+  // cancelar vuelve a la lista
+  document.getElementById("btn-cancelar").addEventListener("click", () => {
+    editingTareaId = null;
+    document.getElementById("formCrearTarea").reset();
+    cargarListaTareas();
+  });
+
+  // submit del formulario
+  const form = document.getElementById("formCrearTarea");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      nombreActividad: document.getElementById("nombreActividad").value,
+      descripcion: document.getElementById("descripcion").value,
+      fechaLimite: document.getElementById("fechaLimite").value,
+      profesorId: profesorGlobal.id,
+      curso: { idCurso: parseInt(document.getElementById("cursoId").value) }
+    };
+
+    try {
+      let resp;
+      if (editingTareaId) {
+        resp = await fetch(`/api/tareas/actualizar/${editingTareaId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        resp = await fetch("/api/tareas/crear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (resp.ok) {
+        alert(editingTareaId ? "✅ Tarea actualizada" : "✅ Tarea creada");
+        editingTareaId = null;
+        form.reset();
+        cargarListaTareas();
+      } else {
+        console.error(await resp.text());
+        alert("❌ Error al guardar la tarea");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("⚠️ Error de conexión con el servidor");
+    }
+  });
+
+  cargarListaTareas("mias");
+}
+
+// ===============================
+// LISTAR TAREAS
+// ===============================
+// ===============================
 async function cargarListaTareas(filtro = "mias") {
   const container = document.getElementById("listaTareasContainer");
-  if (!container) {
-    console.warn("No existe #listaTareasContainer — llama primero a cargarCrearTareas()");
-    return;
-  }
+  if (!container) return;
 
   container.innerHTML = `
     <div class="card" style="margin-top:16px;">
       <h2>${filtro === "todas" ? "Todas las Tareas" : "Mis Tareas"}</h2>
       <div style="margin-bottom:10px; display:flex; gap:8px;">
-        <button id="btn-misTareas" class="btn-secondary"> Mis tareas</button>
-        <button id="btn-todasTareas" class="btn-secondary"> Todas</button>
+        <button id="btn-misTareas" class="btn-secondary">Mis tareas</button>
+        <button id="btn-todasTareas" class="btn-secondary">Todas</button>
       </div>
-
       <div style="overflow:auto;">
         <table class="tabla-tareas" style="width:100%;">
           <thead>
@@ -213,40 +215,21 @@ async function cargarListaTareas(filtro = "mias") {
               <th>Actividad</th>
               <th>Descripción</th>
               <th>Fecha Límite</th>
+              <th>Curso</th>
               <th>Profesor</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbodyTareas">
-            <tr><td colspan="6">Cargando...</td></tr>
+            <tr><td colspan="7">Cargando...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   `;
 
-  // Filtros
-  document.getElementById("btn-misTareas").addEventListener("click", (e) => {
-    cargarListaTareas("mias");
-    e.target.classList.add("active");
-    document.getElementById("btn-todasTareas").classList.remove("active");
-  });
-
-  document.getElementById("btn-todasTareas").addEventListener("click", (e) => {
-    cargarListaTareas("todas");
-    e.target.classList.add("active");
-    document.getElementById("btn-misTareas").classList.remove("active");
-  });
-
-  // Si se solicita "mias" pero no tenemos id, intentamos cargar perfil
-  if (filtro === "mias" && !profesorGlobal.id) {
-    await loadPerfil();
-    if (!profesorGlobal.id) {
-      const tbody = document.getElementById("tbodyTareas");
-      tbody.innerHTML = `<tr><td colspan="6">❌ No se pudo determinar el profesor (inicia sesión nuevamente)</td></tr>`;
-      return;
-    }
-  }
+  document.getElementById("btn-misTareas").addEventListener("click", () => cargarListaTareas("mias"));
+  document.getElementById("btn-todasTareas").addEventListener("click", () => cargarListaTareas("todas"));
 
   let url = filtro === "todas" ? "/api/tareas" : `/api/tareas/profesor/${profesorGlobal.id}`;
 
@@ -257,49 +240,53 @@ async function cargarListaTareas(filtro = "mias") {
 
     const tbody = document.getElementById("tbodyTareas");
     if (!tareas || tareas.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6">📌 No hay tareas para mostrar</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7">📌 No hay tareas para mostrar</td></tr>`;
       return;
     }
 
+    // Renderizar todas las tareas
     tbody.innerHTML = tareas.map(t => {
-      // Solo permitir editar/eliminar si es dueño de la tarea
-      let acciones = "";
-      if (t.profesorId === profesorGlobal.id) {
-        acciones = `
-          <button class="btn-accion editar" data-id="${t.id}">✏️</button>
-          <button class="btn-accion eliminar" data-id="${t.id}">🗑️</button>
-        `;
-      }
+      const acciones = (t.profesorId === profesorGlobal.id) ? `
+        <button class="btn-accion editar" data-id="${t.id}">✏️</button>
+        <button class="btn-accion eliminar" data-id="${t.id}">🗑️</button>
+      ` : "";
+
+      // Si usas DTO plano, curso puede venir con idCurso y nombreCurso
+      const cursoNombre = t.nombreCurso || (t.curso ? t.curso.nombre : "—");
+
       return `
         <tr>
           <td>${t.id}</td>
           <td>${t.nombreActividad}</td>
           <td>${t.descripcion}</td>
           <td>${t.fechaLimite ? prettyDate(t.fechaLimite) : ""}</td>
-          <td>${t.profesorNombre || ("Profesor " + t.profesorId)}</td>
+          <td>${cursoNombre}</td>
+          <td>Profesor ${t.profesorId}</td>
           <td>${acciones}</td>
         </tr>
       `;
     }).join("");
 
-    // listeners para editar/eliminar (solo si hay botones)
-    document.querySelectorAll('.btn-accion.editar').forEach(btn => {
-      btn.addEventListener('click', () => editarTarea(parseInt(btn.dataset.id)));
-    });
-    document.querySelectorAll('.btn-accion.eliminar').forEach(btn => {
-      btn.addEventListener('click', () => eliminarTarea(parseInt(btn.dataset.id)));
-    });
+    // Asociar eventos a botones
+    document.querySelectorAll('.btn-accion.editar').forEach(btn =>
+      btn.addEventListener('click', () => editarTarea(parseInt(btn.dataset.id)))
+    );
+    document.querySelectorAll('.btn-accion.eliminar').forEach(btn =>
+      btn.addEventListener('click', () => eliminarTarea(parseInt(btn.dataset.id)))
+    );
 
   } catch (err) {
     console.error(err);
-    const tbody = document.getElementById("tbodyTareas");
-    if (tbody) tbody.innerHTML = `<tr><td colspan="6">⚠️ Error al cargar las tareas</td></tr>`;
+    document.getElementById("tbodyTareas").innerHTML = `<tr><td colspan="7">⚠️ Error al cargar las tareas</td></tr>`;
   }
 }
 
-// ----------------------------
-// Editar y Eliminar
-// ----------------------------
+
+
+
+// ===============================
+// EDITAR Y ELIMINAR
+// ===============================
 async function editarTarea(id) {
   try {
     const resp = await fetch(`/api/tareas/buscar/${id}`);
@@ -310,8 +297,6 @@ async function editarTarea(id) {
       alert("❌ No puedes editar esta tarea, no es tuya.");
       return;
     }
-
-    // Abre el formulario y precarga datos
     cargarCrearTareas(tarea);
   } catch (err) {
     console.error(err);
@@ -322,7 +307,7 @@ async function editarTarea(id) {
 async function eliminarTarea(id) {
   if (!confirm("¿Seguro que deseas eliminar esta tarea?")) return;
   try {
-    const resp = await fetch(`/api/tareas/eliminar/${id}`, { method: "DELETE" });
+    const resp = await fetch(`/api/tareas/eliminar/${id}/${profesorGlobal.id}`, { method: "DELETE" });
     if (resp.ok) {
       alert("✅ Tarea eliminada");
       cargarListaTareas();
@@ -335,6 +320,36 @@ async function eliminarTarea(id) {
     alert("⚠️ Error de conexión al eliminar");
   }
 }
+
+// ===============================
+// CARGAR CURSOS EN SELECT
+// ===============================
+async function cargarCursosSelect() {
+  if (!profesorGlobal?.id) {
+    console.error("No se encontró el ID del profesor");
+    return;
+  }
+
+  try {
+    const resp = await fetch(`/api/curso/profesor/${profesorGlobal.id}`);
+    if (!resp.ok) throw new Error("No se pudieron cargar cursos");
+    const cursos = await resp.json();
+
+    const select = document.getElementById("cursoId");
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Selecciona un curso --</option>';
+    cursos.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.idCurso;
+      opt.textContent = c.nombre;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error("Error al cargar cursos", err);
+  }
+}
+
 
 
   function cargarPerfilVista() {
@@ -506,15 +521,23 @@ function cargarCalificaciones() {
 // Mostrar calificaciones y permitir edición
 function verCalificacionesCurso(idCurso, nombreCurso) {
   const detalleDiv = document.getElementById("detalleCalificaciones");
+
+  console.log("Curso seleccionado:", idCurso, nombreCurso);
+
   detalleDiv.innerHTML = `
     <h2 class="titulo-curso">📘 Calificaciones de ${nombreCurso}</h2>
-    <p>Cargando...</p>
+    <p>Cargando entregas...</p>
   `;
 
   fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/tareas`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+      return res.json();
+    })
     .then(entregas => {
-      if (!entregas || entregas.length === 0) {
+      console.log("Entregas recibidas:", entregas);
+
+      if (!Array.isArray(entregas) || entregas.length === 0) {
         detalleDiv.innerHTML = `
           <h2 class="titulo-curso">📘 Calificaciones de ${nombreCurso}</h2>
           <p>No hay entregas registradas.</p>
@@ -525,17 +548,23 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
       let html = `<div class="grid-tareas">`;
 
       entregas.forEach(e => {
+        const idEntrega = e.idEntrega;
+        const nombreTarea = e.nombreTarea;
+        const idUsuario = e.idUsuario;
+        const calificacion = e.calificacion ?? "";
+        const fechaEntrega = e.fechaEntrega ? new Date(e.fechaEntrega).toLocaleString() : "No registrada";
+
         html += `
           <div class="card-tarea">
-            <h3>${e.nombreTarea}</h3>
-            <p>Estudiante: <strong>Alumno ${e.idUsuario}</strong></p>
+            <h3>${nombreTarea}</h3>
+            <p>Estudiante: <strong>Alumno ${idUsuario}</strong></p>
             <p>
               Nota: 
-              <input type="number" min="0" max="100" value="${e.calificacion ?? ""}" 
-                     id="nota-${e.idEntrega}" style="width:60px; padding:4px; text-align:center;">
+              <input type="number" min="0" max="100" value="${calificacion}" 
+                     id="nota-${idEntrega}" style="width:60px; padding:4px; text-align:center;">
             </p>
-            <p>Fecha entrega: ${e.fechaEntrega ? new Date(e.fechaEntrega).toLocaleString() : "No registrada"}</p>
-            <button class="btn-guardar" data-id="${e.idEntrega}" 
+            <p>Fecha entrega: ${fechaEntrega}</p>
+            <button class="btn-guardar" data-id="${idEntrega}" 
                     style="padding:4px 8px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">
               Guardar Nota
             </button>
@@ -553,7 +582,13 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
       detalleDiv.querySelectorAll(".btn-guardar").forEach(btn => {
         btn.addEventListener("click", () => {
           const entregaId = btn.dataset.id;
-          const nuevaNota = Number(document.getElementById(`nota-${entregaId}`).value);
+          const inputNota = document.getElementById(`nota-${entregaId}`);
+          const nuevaNota = Number(inputNota.value);
+
+          if (isNaN(nuevaNota) || nuevaNota < 0 || nuevaNota > 100) {
+            alert("⚠️ Ingresa una nota válida entre 0 y 100");
+            return;
+          }
 
           fetch(`http://localhost:8080/api/entregas/calificar/${entregaId}?calificacion=${nuevaNota}`, {
             method: "PUT"
@@ -562,7 +597,7 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
             if (res.ok) {
               alert("✅ Calificación actualizada");
             } else {
-              alert("❌ Error al actualizar la calificación");
+              alert(`❌ Error al actualizar la calificación (HTTP ${res.status})`);
             }
           })
           .catch(err => {
@@ -571,12 +606,18 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
           });
         });
       });
+
     })
     .catch(err => {
-      console.error(err);
-      detalleDiv.innerHTML = `<p style="color:red;">❌ Error al cargar calificaciones</p>`;
+      console.error("Error al cargar entregas:", err);
+      detalleDiv.innerHTML = `
+        <h2 class="titulo-curso">📘 Calificaciones de ${nombreCurso}</h2>
+        <p style="color:red;">❌ Error al cargar calificaciones</p>
+      `;
     });
 }
+
+
 
 
 
@@ -938,7 +979,181 @@ function cargarForosProfesor() {
 
 
 
-  function cargarCursos() { mainContent.innerHTML = "<h1>Cursos</h1><p>Sección en construcción...</p>"; }
+function cargarCursos() {
+  mainContent.innerHTML = `
+    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;"> Mis Cursos </h1>
+    <div id="cursosContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>
+    <div style="text-align:center; margin-top:20px;">
+      <button id="btnNuevoCurso" style="padding:10px 20px; background:#16a34a; color:white; border:none; border-radius:8px; cursor:pointer;">
+        ➕ Crear Nuevo Curso
+      </button>
+    </div>
+
+    <!-- 🔹 Modal para estudiantes -->
+    <div id="modalEstudiantes" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+      background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:1000;">
+      <div style="background:white; padding:20px; border-radius:10px; max-width:500px; width:90%;">
+        <h2 style="margin-bottom:15px; color:#1e3a8a;">👥 Estudiantes inscritos</h2>
+        <ul id="listaEstudiantes" style="list-style:none; padding:0; margin:0;"></ul>
+        <div style="text-align:right; margin-top:15px;">
+          <button id="cerrarModal" style="padding:8px 12px; background:#dc2626; color:white; border:none; border-radius:8px; cursor:pointer;">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // 🔹 Aquí deberías pasar el id del profesor autenticado (profesorGlobal.id)
+  fetch(`http://localhost:8080/api/curso/profesor/${profesorGlobal.id}`)
+    .then(r => r.json())
+    .then(data => {
+      const container = document.getElementById("cursosContainer");
+      container.innerHTML = "";
+
+      if (data.length === 0) {
+        container.innerHTML = `<p style="grid-column:1/-1; text-align:center;">⚠️ No tienes cursos creados aún</p>`;
+        return;
+      }
+
+      data.forEach(curso => {
+        const card = document.createElement("div");
+        card.style = "background:white; border-radius:12px; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition:transform .2s;";
+
+        card.innerHTML = `
+          <h2 style="color:#1e3a8a; font-size:20px; margin-bottom:10px;">${curso.nombre}</h2>
+          <p style="font-size:14px; color:#444; margin-bottom:15px;">${curso.descripcion}</p>
+          <p><strong>Fecha de creación:</strong> ${new Date(curso.fechaCreacion).toLocaleDateString()}</p>
+          <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btnVer" style="flex:1; padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer;">
+              📋 Ver Estudiantes
+            </button>
+            <button class="btnEditar" style="flex:1; padding:8px 12px; background:#f59e0b; color:white; border:none; border-radius:8px; cursor:pointer;">
+              ✏️ Editar
+            </button>
+            <button class="btnEliminar" style="flex:1; padding:8px 12px; background:#dc2626; color:white; border:none; border-radius:8px; cursor:pointer;">
+              🗑️ Eliminar
+            </button>
+          </div>
+        `;
+
+        // 🔹 Botón Editar
+        card.querySelector(".btnEditar").addEventListener("click", () => {
+          const nuevoNombre = prompt("Nuevo nombre del curso:", curso.nombre);
+          const nuevaDescripcion = prompt("Nueva descripción:", curso.descripcion);
+
+          if (nuevoNombre && nuevaDescripcion) {
+            fetch(`http://localhost:8080/api/curso/actualizar/${curso.idCurso}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                nombre: nuevoNombre,
+                descripcion: nuevaDescripcion,
+                profesor: { id: profesorGlobal.id } // mantener profesor
+              })
+            })
+            .then(r => {
+              if (!r.ok) throw new Error("❌ Error al actualizar curso");
+              return r.json();
+            })
+            .then(() => {
+              alert("✅ Curso actualizado con éxito");
+              cargarCursos(); // refrescar lista
+            })
+            .catch(err => alert(err));
+          }
+        });
+
+        // 🔹 Botón Eliminar
+        card.querySelector(".btnEliminar").addEventListener("click", () => {
+          if (confirm(`¿Seguro que deseas eliminar el curso "${curso.nombre}"?`)) {
+            fetch(`http://localhost:8080/api/curso/eliminar/${curso.idCurso}`, { method: "DELETE" })
+              .then(r => {
+                if (!r.ok) throw new Error("❌ Error al eliminar curso");
+                alert("🗑️ Curso eliminado correctamente");
+                cargarCursos(); // refrescar lista
+              })
+              .catch(err => alert(err));
+          }
+        });
+
+        // 🔹 Botón Ver Estudiantes (usando modal)
+        card.querySelector(".btnVer").addEventListener("click", () => {
+          fetch(`http://localhost:8080/api/inscripciones/curso/${curso.idCurso}/estudiantes`)
+            .then(r => {
+              if (!r.ok) throw new Error("❌ Error al cargar estudiantes");
+              return r.json();
+            })
+            .then(estudiantes => {
+              const lista = document.getElementById("listaEstudiantes");
+              lista.innerHTML = "";
+
+              if (estudiantes.length === 0) {
+                lista.innerHTML = "<li>⚠️ No hay estudiantes inscritos</li>";
+              } else {
+                estudiantes.forEach(e => {
+                  const li = document.createElement("li");
+                  li.textContent = `${e.nombre} ${e.apellido}`;
+                  li.style.padding = "5px 0";
+                  lista.appendChild(li);
+                });
+              }
+
+              document.getElementById("modalEstudiantes").style.display = "flex";
+            })
+            .catch(err => alert(err));
+        });
+
+        container.appendChild(card);
+      });
+
+      // Animación hover
+      document.querySelectorAll("#cursosContainer > div").forEach(card => {
+        card.addEventListener("mouseenter", () => card.style.transform = "scale(1.03)");
+        card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
+      });
+
+      // 🔹 Crear nuevo curso
+      document.getElementById("btnNuevoCurso").addEventListener("click", () => {
+        const nombre = prompt("Nombre del curso:");
+        const descripcion = prompt("Descripción del curso:");
+        if (nombre && descripcion) {
+          fetch("http://localhost:8080/api/curso/crear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nombre,
+              descripcion,
+              profesor: { id: profesorGlobal.id }
+            })
+          })
+          .then(r => {
+            if (!r.ok) throw new Error("❌ Error al crear curso");
+            return r.json();
+          })
+          .then(() => {
+            alert("✅ Curso creado con éxito");
+            cargarCursos();
+          })
+          .catch(err => alert(err));
+        }
+      });
+
+      // 🔹 Cerrar modal estudiantes
+      document.getElementById("cerrarModal").addEventListener("click", () => {
+        document.getElementById("modalEstudiantes").style.display = "none";
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById("cursosContainer").innerHTML = `
+        <p style="grid-column:1/-1; text-align:center; color:red;">❌ Error al cargar cursos</p>
+      `;
+    });
+}
+
+
+
+
+
 
   // ----------------------------
   // Exponer funciones globales (por si usas onclick inline)

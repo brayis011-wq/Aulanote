@@ -1,6 +1,8 @@
 package com.proyecto.spring.aulanote.aulanote.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.*;
 
@@ -18,9 +20,27 @@ public class Curso {
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column(name = "fecha_creacion", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(
+        name = "fecha_creacion",
+        nullable = false,
+        updatable = false,   // 🚫 No se actualiza en UPDATE
+        insertable = false   // 🚫 No se incluye en INSERT
+    )
     private LocalDateTime fechaCreacion;
 
+    // Relación con Inscripcion
+    @OneToMany(mappedBy = "curso", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Inscripcion> inscripciones = new ArrayList<>();
+
+    public List<Inscripcion> getInscripciones() {
+        return inscripciones;
+    }
+
+    public void setInscripciones(List<Inscripcion> inscripciones) {
+        this.inscripciones = inscripciones;
+    }
+
+    
     // Relación con Usuario (profesor)
     @ManyToOne
     @JoinColumn(name = "profesor_id", nullable = false)

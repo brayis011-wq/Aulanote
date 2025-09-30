@@ -5,8 +5,13 @@ import org.springframework.stereotype.Repository;
 import com.proyecto.spring.aulanote.aulanote.entity.Tareas;
 import java.util.List;
 
-@Repository
+ @Repository
 public interface TareasRepository extends JpaRepository<Tareas, Integer> {
-    // 📌 Buscar todas las tareas de un profesor
     List<Tareas> findByProfesorId(Integer profesorId);
+
+    List<Tareas> findByCurso_IdCurso(Integer cursoId);
+
+    List<Tareas> findByProfesorIdAndCurso_IdCurso(Integer profesorId, Integer cursoId);
 }
+
+

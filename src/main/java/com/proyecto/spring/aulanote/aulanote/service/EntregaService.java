@@ -3,10 +3,12 @@ package com.proyecto.spring.aulanote.aulanote.service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.proyecto.spring.aulanote.aulanote.dto.EntregaDTO;
 import com.proyecto.spring.aulanote.aulanote.entity.Entrega;
 import com.proyecto.spring.aulanote.aulanote.repository.EntregaRepository;
 
@@ -16,6 +18,15 @@ public class EntregaService {
     @Autowired
     private EntregaRepository entregaRepository;
 
+    
+
+    // Obtener entregas por idCurso en formato DTO
+    public List<EntregaDTO> obtenerEntregasDTOPorCurso(Integer idCurso) {
+        List<Entrega> entregas = entregaRepository.findByCursoIdCurso(idCurso);
+        return entregas.stream()
+                       .map(EntregaDTO::new)
+                       .collect(Collectors.toList());
+    }
     // Listar todas las entregas
     public List<Entrega> listarEntregas() {
         return entregaRepository.findAll();
