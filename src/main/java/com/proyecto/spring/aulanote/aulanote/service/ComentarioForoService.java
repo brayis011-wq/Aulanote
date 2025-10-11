@@ -5,6 +5,7 @@ import com.proyecto.spring.aulanote.aulanote.entity.ComentarioForo;
 import com.proyecto.spring.aulanote.aulanote.entity.Foro;
 import com.proyecto.spring.aulanote.aulanote.entity.Usuario;
 import com.proyecto.spring.aulanote.aulanote.repository.ComentarioForoRepository;
+import com.proyecto.spring.aulanote.aulanote.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,32 +20,22 @@ public class ComentarioForoService {
     @Autowired
     private ComentarioForoRepository comentarioRepo;
 
-    // 🔹 Listar comentarios por foro -> devuelve DTOs
+    @Autowired
+    private UsuarioRepository usuarioRepo; // 🔹 para obtener nombre y apellido
+
+    // 🔹 Listar comentarios por foro
     public List<ComentarioForoDTO> listarPorForo(Integer foroId) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
         return comentarioRepo.findByForo_Id(foroId).stream()
                 .map(c -> new ComentarioForoDTO(
+                        c.getIdComentario(),
                         c.getUsuario().getNombre() + " " + c.getUsuario().getApellido(),
                         c.getContenido(),
-                        c.getFechaCreacion() != null ? c.getFechaCreacion().format(formatter) : ""
+                        c.getFechaCreacion() != null ? c.getFechaCreacion().format(formatter) : "",
+                        c.getUsuario().getId()
                 ))
                 .collect(Collectors.toList());
-    }
-
-    // 🔹 Editar comentario (solo dueño)
-    public Optional<ComentarioForo> editar(Integer id, Integer usuarioId, String nuevoContenido) {
-        if (id == null || usuarioId == null || nuevoContenido == null || nuevoContenido.trim().isEmpty()) {
-            return Optional.empty();
-        }
-
-        return comentarioRepo.findById(id).map(c -> {
-            if (!c.getUsuario().getId().equals(usuarioId)) {
-                return null; // ❌ No es dueño → no puede editar
-            }
-            c.setContenido(nuevoContenido);
-            return comentarioRepo.save(c);
-        });
     }
 
     // 🔹 Crear comentario
@@ -56,8 +47,9 @@ public class ComentarioForoService {
         Foro foro = new Foro();
         foro.setId(foroId);
 
-        Usuario usuario = new Usuario();
-        usuario.setId(usuarioId);
+        // ✅ Buscar usuario real en BD
+        Usuario usuario = usuarioRepo.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         ComentarioForo comentario = new ComentarioForo();
         comentario.setContenido(contenido);
@@ -67,36 +59,53 @@ public class ComentarioForoService {
         ComentarioForo guardado = comentarioRepo.save(comentario);
 
         return new ComentarioForoDTO(
+                guardado.getIdComentario(),
                 usuario.getNombre() + " " + usuario.getApellido(),
                 guardado.getContenido(),
                 guardado.getFechaCreacion() != null
                         ? guardado.getFechaCreacion().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
-                        : ""
+                        : "",
+                usuario.getId()
         );
     }
 
-    // 🔹 Eliminar comentario (dueño o admin/profesor)
-    public boolean eliminar(Integer id, Integer usuarioId) {
-        if (id == null || usuarioId == null) return false;
+    // 🔹 Editar comentario (solo dueño)
+    public Optional<ComentarioForo> editar(Integer idComentario, Integer usuarioId, String nuevoContenido) {
+        if (idComentario == null || usuarioId == null || nuevoContenido == null || nuevoContenido.trim().isEmpty()) {
+            return Optional.empty();
+        }
 
-        return comentarioRepo.findById(id).map(c -> {
+        return comentarioRepo.findById(idComentario).map(c -> {
+            if (!c.getUsuario().getId().equals(usuarioId)) {
+                return null; // ❌ no es dueño → no edita
+            }
+            c.setContenido(nuevoContenido);
+            return comentarioRepo.save(c);
+        });
+    }
+
+    // 🔹 Eliminar comentario (dueño o profesor/admin)
+    public boolean eliminar(Integer idComentario, Integer usuarioId) {
+        if (idComentario == null || usuarioId == null) return false;
+
+        return comentarioRepo.findById(idComentario).map(c -> {
             Usuario autor = c.getUsuario();
 
-            // ✅ Si es dueño del comentario
+            // ✅ dueño
             if (autor.getId().equals(usuarioId)) {
-                comentarioRepo.deleteById(id);
+                comentarioRepo.deleteById(idComentario);
                 return true;
             }
 
-            // ✅ Si el usuario es profesor/admin (ejemplo con campo "cargo")
+            // ✅ admin/profesor (ejemplo con campo cargo)
             if (autor.getCargo() != null &&
                     (autor.getCargo().equalsIgnoreCase("profesor")
                             || autor.getCargo().equalsIgnoreCase("admin"))) {
-                comentarioRepo.deleteById(id);
+                comentarioRepo.deleteById(idComentario);
                 return true;
             }
 
-            return false; // ❌ No tiene permisos
+            return false;
         }).orElse(false);
     }
 }

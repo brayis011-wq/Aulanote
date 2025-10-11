@@ -1,69 +1,66 @@
 package com.proyecto.spring.aulanote.aulanote.controller;
 
 import com.proyecto.spring.aulanote.aulanote.dto.ComentarioForoDTO;
+import com.proyecto.spring.aulanote.aulanote.dto.NuevoComentarioDTO;
 import com.proyecto.spring.aulanote.aulanote.entity.ComentarioForo;
 import com.proyecto.spring.aulanote.aulanote.service.ComentarioForoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/comentarios")
-@CrossOrigin(origins = "*") // 🔹 Permitir llamadas desde el frontend
 public class ComentarioForoController {
 
     @Autowired
     private ComentarioForoService comentarioService;
 
-    // 🔹 Listar comentarios de un foro
+    // 🔹 1. Listar comentarios de un foro
     @GetMapping("/foro/{foroId}")
     public ResponseEntity<List<ComentarioForoDTO>> listarPorForo(@PathVariable Integer foroId) {
-        List<ComentarioForoDTO> comentarios = comentarioService.listarPorForo(foroId);
-        if (comentarios.isEmpty()) return ResponseEntity.noContent().build();
-        return ResponseEntity.ok(comentarios);
+        return ResponseEntity.ok(comentarioService.listarPorForo(foroId));
     }
 
-    // 🔹 Crear comentario
+    // 🔹 2. Crear comentario en un foro
     @PostMapping("/foro/{foroId}/usuario/{usuarioId}")
-    public ResponseEntity<ComentarioForoDTO> comentarEnForo(
+    public ResponseEntity<ComentarioForoDTO> comentar(
             @PathVariable Integer foroId,
             @PathVariable Integer usuarioId,
-            @RequestBody String contenido) {
-        try {
-            ComentarioForoDTO nuevo = comentarioService.comentarForo(foroId, usuarioId, contenido);
-            return new ResponseEntity<>(nuevo, HttpStatus.CREATED);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().build();
-        }
+            @RequestBody NuevoComentarioDTO nuevoComentario
+    ) {
+        ComentarioForoDTO comentario = comentarioService.comentarForo(foroId, usuarioId, nuevoComentario.getContenido());
+        return ResponseEntity.ok(comentario);
     }
 
-    // 🔹 Editar comentario (solo si el comentario pertenece al usuario)
-    @PutMapping("/editar/{id}/{usuarioId}")
-    public ResponseEntity<ComentarioForo> editarComentario(
-            @PathVariable Integer id,
+    // 🔹 3. Editar comentario (solo dueño)
+    @PutMapping("/{idComentario}/usuario/{usuarioId}")
+    public ResponseEntity<?> editar(
+            @PathVariable Integer idComentario,
             @PathVariable Integer usuarioId,
-            @RequestBody ComentarioForo dto) {
-
-        return comentarioService.editar(id, usuarioId, dto.getContenido())
-                .map(updated -> new ResponseEntity<>(updated, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.FORBIDDEN));
+            @RequestBody NuevoComentarioDTO nuevoContenido
+    ) {
+        Optional<ComentarioForo> actualizado = comentarioService.editar(idComentario, usuarioId, nuevoContenido.getContenido());
+        if (actualizado.isPresent()) {
+            return ResponseEntity.ok("Comentario actualizado con éxito ✅");
+        } else {
+            return ResponseEntity.status(403).body("No tienes permisos para editar este comentario ❌");
+        }
     }
 
-    // 🔹 Eliminar comentario
-    // ✅ El usuario puede eliminar su propio comentario
-    // ✅ Un administrador/profesor puede eliminar cualquier comentario
-    @DeleteMapping("/eliminar/{id}/{usuarioId}")
-    public ResponseEntity<Void> eliminarComentario(
-            @PathVariable Integer id,
-            @PathVariable Integer usuarioId) {
-
-        if (comentarioService.eliminar(id, usuarioId)) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    // 🔹 4. Eliminar comentario (dueño o profesor/admin)
+    @DeleteMapping("/{idComentario}/usuario/{usuarioId}")
+    public ResponseEntity<?> eliminar(
+            @PathVariable Integer idComentario,
+            @PathVariable Integer usuarioId
+    ) {
+        boolean eliminado = comentarioService.eliminar(idComentario, usuarioId);
+        if (eliminado) {
+            return ResponseEntity.ok("Comentario eliminado con éxito 🗑️");
+        } else {
+            return ResponseEntity.status(403).body("No tienes permisos para eliminar este comentario ❌");
         }
-        return new ResponseEntity<>(HttpStatus.FORBIDDEN); // 🔒 No tiene permisos
     }
 }

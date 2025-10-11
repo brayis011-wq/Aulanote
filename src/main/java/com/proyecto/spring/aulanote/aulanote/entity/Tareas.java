@@ -2,6 +2,7 @@ package com.proyecto.spring.aulanote.aulanote.entity;
 
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "tareas")
@@ -23,12 +24,18 @@ public class Tareas {
     @Column(name = "profesor_id", nullable = false)
     private Integer profesorId;
 
-    // 📌 Relación con curso
-    @ManyToOne
-    @JoinColumn(name = "curso_id", nullable = false) 
+    // 📘 Relación con Curso
+    @ManyToOne(fetch = FetchType.EAGER) 
+    @JoinColumn(name = "curso_id", nullable = false)
+    @JsonIgnoreProperties({
+        "hibernateLazyInitializer",
+        "handler",
+        "inscripciones",
+        "profesor"
+    })
     private Curso curso;
 
-    // Getters y Setters
+    // ====== Getters y Setters ======
     public Integer getId() {
         return id;
     }

@@ -83,6 +83,18 @@ CREATE TABLE tareas (
     profesor_id INT NOT NULL,
     CONSTRAINT fk_tarea_profesor FOREIGN KEY (profesor_id) REFERENCES usuario(Id)
 );
+use aulanote2;
+UPDATE tareas
+SET curso_id = 2
+WHERE curso_id = 1 AND id > 0;
+
+
+ALTER TABLE tareas ADD COLUMN curso_id INT NULL;
+UPDATE tareas SET curso_id = 1 WHERE curso_id IS NULL;
+ALTER TABLE tareas MODIFY curso_id INT NOT NULL;
+ALTER TABLE tareas 
+ADD CONSTRAINT fk_tarea_curso FOREIGN KEY (curso_id) REFERENCES cursos(id_curso);
+
 
 -- Datos de ejemplo para tareas
 INSERT INTO tareas (nombre_actividad, fecha_limite, descripcion, profesor_id) VALUES
