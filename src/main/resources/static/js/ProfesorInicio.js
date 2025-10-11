@@ -681,156 +681,66 @@ function mostrarNotificacion(mensaje, tipo = "exito") {
 }
 
 
-function cargarComentarios(foroId, container) {
-  fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
-    .then(r => {
-      if (!r.ok) throw new Error("Error al cargar comentarios");
-      return r.json();
-    })
-    .then(comentarios => {
-      container.innerHTML = "";
-
-      if (!comentarios || comentarios.length === 0) {
-        container.innerHTML = "<p>No hay comentarios todavía.</p>";
-        return;
-      }
-
-      comentarios.forEach(c => {
-        const divC = document.createElement("div");
-        divC.style.borderTop = "1px solid #eee";
-        divC.style.padding = "5px 0";
-
-        const nombreAutor = c.autor || "Usuario desconocido";
-
-        divC.innerHTML = `
-          <strong>${nombreAutor}:</strong>
-          <span class="comentario-texto">${c.contenido}</span>
-          <br>
-          <small>${c.fechaCreacion ? c.fechaCreacion : ""}</small>
-          <div class="acciones-comentario" style="margin-top:5px;"></div>
-        `;
-
-        const acciones = divC.querySelector(".acciones-comentario");
-
-    
-        if (c.usuarioId === profesorGlobal.id) {
-// --- Botón editar ---
-btnEditarC.addEventListener("click", () => {
-  if (btnEditarC.textContent === "Editar") {
-    textoComentario.contentEditable = true;
-    textoComentario.style.border = "1px solid #ccc";
-    btnEditarC.textContent = "Guardar";
-  } else {
-    const nuevoContenido = textoComentario.textContent.trim();
-    fetch(`http://localhost:8080/api/comentarios/editar/${c.idComentario}/${profesorGlobal.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contenido: nuevoContenido })
-    })
-      .then(resp => {
-        if (!resp.ok) throw new Error("Error al editar comentario");
-        textoComentario.contentEditable = false;
-        textoComentario.style.border = "none";
-        btnEditarC.textContent = "Editar";
-        mostrarNotificacion("✏️ Comentario actualizado", "exito");
-      })
-      .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
-  }
-});
-
-// --- Botón eliminar ---
-btnEliminarC.addEventListener("click", () => {
-  if (!confirm("¿Eliminar este comentario?")) return;
-  fetch(`http://localhost:8080/api/comentarios/eliminar/${c.idComentario}/${profesorGlobal.id}`, {
-    method: "DELETE"
-  })
-    .then(resp => {
-      if (!resp.ok) throw new Error("Error al eliminar comentario");
-      cargarComentarios(foroId, container);
-      mostrarNotificacion("🗑️ Comentario eliminado", "exito");
-    })
-    .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
-});
-
-        } else {
-          // --- Si NO es mío → solo botón eliminar (si soy profesor/admin)
-          const btnEliminarC = document.createElement("button");
-          btnEliminarC.textContent = "Eliminar";
-          btnEliminarC.style.cssText = "padding:2px 6px; background:#dc2626; color:white; border:none; border-radius:3px; cursor:pointer;";
-          acciones.appendChild(btnEliminarC);
-
-          btnEliminarC.addEventListener("click", () => {
-            if (!confirm("¿Eliminar este comentario?")) return;
-            fetch(`http://localhost:8080/api/comentarios/eliminar/${c.idComentario}?usuarioId=${profesorGlobal.id}`, {
-              method: "DELETE"
-            })
-              .then(resp => {
-                if (!resp.ok) throw new Error("Error al eliminar comentario");
-                cargarComentarios(foroId, container);
-                mostrarNotificacion("🗑️ Comentario eliminado", "exito");
-              })
-              .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
-          });
-        }
-
-        container.appendChild(divC);
-      });
-    })
-    .catch(err => {
-      console.error("Error cargando comentarios:", err);
-      container.innerHTML = "<p style='color:red;'>❌ No se pudieron cargar los comentarios</p>";
-    });
-}
 
 
 
+
+// =========================================================
+// 🔹 CARGAR FOROS DEL PROFESOR (moderno y mejorado)
+// =========================================================
 function cargarForosProfesor() {
   mainContent.innerHTML = `
-    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">Foros</h1>
-    <div id="crearForo" style="margin-bottom:20px; padding:15px; border:1px solid #ccc; border-radius:10px; background:#f9fafb;">
-      <h3>Crear nuevo foro</h3>
-      <input type="text" id="tituloForo" placeholder="Título del foro" style="width:100%; padding:6px; margin-bottom:10px;">
-      <textarea id="descripcionForo" placeholder="Descripción" style="width:100%; padding:6px; margin-bottom:10px;"></textarea>
-      <button id="btnCrearForo" style="padding:8px 12px; background:#16a34a; color:white; border:none; border-radius:5px; cursor:pointer;">Crear Foro</button>
+    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:25px;">💬 Foros del Profesor</h1>
+
+    <div id="crearForo" style="
+      margin-bottom:25px; padding:20px; border:1px solid #e5e7eb;
+      border-radius:12px; background:#f9fafb; box-shadow:0 1px 3px rgba(0,0,0,0.05);
+    ">
+      <h3 style="margin-bottom:10px;">📝 Crear nuevo foro</h3>
+      <input type="text" id="tituloForo" placeholder="Título del foro" 
+             style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px;">
+      <textarea id="descripcionForo" placeholder="Descripción" 
+             style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px;"></textarea>
+      <button id="btnCrearForo" style="
+        padding:10px 16px; background:#16a34a; color:white; border:none;
+        border-radius:8px; cursor:pointer; font-weight:600; transition:0.2s;
+      " onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">
+        ➕ Crear Foro
+      </button>
     </div>
-    <div id="listaForos"></div>
+
+    <div id="listaForos" style="min-height:200px; text-align:center; color:#6b7280;">Cargando foros...</div>
   `;
 
   const contenedor = document.getElementById("listaForos");
-  contenedor.innerHTML = "<p>Cargando foros...</p>";
 
- 
-  // Crear foro
- 
+  // ========================
+  // 🔸 Crear foro
+  // ========================
   document.getElementById("btnCrearForo").addEventListener("click", () => {
     const titulo = document.getElementById("tituloForo").value.trim();
     const descripcion = document.getElementById("descripcionForo").value.trim();
-    if (!titulo || !descripcion) return mostrarNotificacion("⚠️ Completa todos los campos", "error");
+    if (!titulo || !descripcion)
+      return mostrarNotificacion("⚠️ Completa todos los campos", "error");
 
-    const nuevoForo = { 
-      titulo, 
-      descripcion, 
-      autorId: profesorGlobal.id  
-    };
+    const nuevoForo = { titulo, descripcion, autorId: profesorGlobal.id };
 
     fetch("http://localhost:8080/api/foros/crear", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevoForo)
     })
-    .then(resp => {
-      if (!resp.ok) throw new Error("Error al crear foro");
-      document.getElementById("tituloForo").value = "";
-      document.getElementById("descripcionForo").value = "";
-      mostrarNotificacion("✅ Foro creado exitosamente", "exito");
-      cargarForosProfesor(); // refrescar
-    })
-    .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+      .then(resp => {
+        if (!resp.ok) throw new Error("Error al crear foro");
+        mostrarNotificacion("✅ Foro creado exitosamente", "exito");
+        cargarForosProfesor();
+      })
+      .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
   });
 
- 
-  // Cargar foros
-
+  // ========================
+  // 🔸 Cargar foros existentes
+  // ========================
   fetch("http://localhost:8080/api/foros")
     .then(r => r.json())
     .then(foros => {
@@ -847,31 +757,44 @@ function cargarForosProfesor() {
         const descripcion = foro.descripcion || "Sin descripción";
         const fecha = foro.fechaCreacion ? new Date(foro.fechaCreacion).toLocaleString() : "Sin fecha";
 
-        // Tarjeta foro
+        // ========================
+        // 💬 Tarjeta de foro
+        // ========================
         const divForo = document.createElement("div");
         divForo.classList.add("foro-card");
         divForo.style.cssText = `
-          border:1px solid #ccc; padding:15px; margin-bottom:15px; 
-          border-radius:10px; background:#fff;
+          border:1px solid #e5e7eb; border-radius:12px; padding:16px;
+          margin-bottom:15px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.05);
         `;
+
         divForo.innerHTML = `
-          <h3 contenteditable="false" class="foro-titulo">${titulo}</h3>
-          <p contenteditable="false" class="foro-descripcion">${descripcion}</p>
-          <small>Creado el: ${fecha}</small>
-          <br><br>
-          <button class="btn-toggle-comentarios" style="padding:6px 10px; background:#3b82f6; color:white; border:none; border-radius:5px; cursor:pointer; margin-bottom:10px;">Mostrar comentarios</button>
-          <div class="comentarios-container" style="margin-top:10px; display:none;"></div>
-          <div class="form-comentar" style="margin-top:10px; display:none;">
-            <input type="text" class="input-comentario" placeholder="Escribe tu comentario..." style="width:80%; padding:6px; border-radius:5px; border:1px solid #ccc;">
-            <button class="btn-enviar-comentario" style="padding:6px 10px; background:#16a34a; color:white; border:none; border-radius:5px; cursor:pointer;">Comentar</button>
+          <h3 class="foro-titulo" style="margin:0; color:#1e3a8a;">${titulo}</h3>
+          <p class="foro-descripcion" style="color:#374151; margin:5px 0 10px;">${descripcion}</p>
+          <small style="color:#6b7280;">📅 Creado el: ${fecha}</small>
+
+          <div style="margin-top:15px;">
+            <button class="btn-toggle-comentarios" style="
+              padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer;
+            ">💬 Ver comentarios</button>
           </div>
-          <div class="acciones-foro" style="margin-top:10px;">
-            <button class="btn-editar" style="padding:6px 10px; background:#f59e0b; color:white; border:none; border-radius:5px; cursor:pointer;">Editar</button>
-            <button class="btn-eliminar" style="padding:6px 10px; background:#dc2626; color:white; border:none; border-radius:5px; cursor:pointer;">Eliminar</button>
+
+          <div class="comentarios-container" style="margin-top:15px; display:none;"></div>
+
+          <div class="form-comentar" style="display:none; margin-top:10px; gap:10px;">
+            <input type="text" class="input-comentario" placeholder="Escribe tu comentario..." 
+                   style="flex:1; padding:8px; border:1px solid #ccc; border-radius:8px;">
+            <button class="btn-enviar-comentario" style="
+              padding:8px 12px; background:#16a34a; color:white; border:none; border-radius:8px; cursor:pointer;
+            ">Enviar</button>
+          </div>
+
+          <div class="acciones-foro" style="margin-top:15px;">
+            <button class="btn-editar" style="padding:8px 12px; background:#f59e0b; color:white; border:none; border-radius:8px; cursor:pointer;">✏️ Editar</button>
+            <button class="btn-eliminar" style="padding:8px 12px; background:#dc2626; color:white; border:none; border-radius:8px; cursor:pointer;">🗑️ Eliminar</button>
           </div>
         `;
 
-        // --- Botón mostrar comentarios ---
+        // --- Toggle comentarios ---
         const btnToggle = divForo.querySelector(".btn-toggle-comentarios");
         const comentariosContainer = divForo.querySelector(".comentarios-container");
         const formComentar = divForo.querySelector(".form-comentar");
@@ -879,89 +802,80 @@ function cargarForosProfesor() {
         const btnEnviar = divForo.querySelector(".btn-enviar-comentario");
 
         btnToggle.addEventListener("click", () => {
-          if (comentariosContainer.style.display === "none") {
-            comentariosContainer.style.display = "block";
-            formComentar.style.display = "flex";
-            comentariosContainer.innerHTML = "<p>Cargando comentarios...</p>";
-
-            cargarComentarios(id, comentariosContainer);
-            btnToggle.textContent = "Ocultar comentarios";
-          } else {
+          const visible = comentariosContainer.style.display === "block";
+          if (visible) {
             comentariosContainer.style.display = "none";
             formComentar.style.display = "none";
-            btnToggle.textContent = "Mostrar comentarios";
+            btnToggle.textContent = "💬 Ver comentarios";
+          } else {
+            comentariosContainer.style.display = "block";
+            formComentar.style.display = "flex";
+            cargarComentarios(id, comentariosContainer);
+            btnToggle.textContent = "⬆️ Ocultar comentarios";
           }
         });
 
-        
         // --- Enviar comentario ---
         btnEnviar.addEventListener("click", () => {
           const contenido = inputComentario.value.trim();
-          if (!contenido) return mostrarNotificacion("⚠️ Escribe un comentario", "error");
+          if (!contenido)
+            return mostrarNotificacion("⚠️ Escribe un comentario", "error");
 
-          const nuevoComentario = { 
-            contenido, 
-            foro: { id }, 
-            usuario: { id: profesorGlobal.id } 
-          };
+          const nuevoComentario = { contenido };
 
           fetch(`http://localhost:8080/api/comentarios/foro/${id}/usuario/${profesorGlobal.id}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(nuevoComentario)
           })
-          .then(resp => {
-            if (!resp.ok) throw new Error("Error al enviar comentario");
-            inputComentario.value = "";
-            mostrarNotificacion("💬 Comentario agregado", "exito");
-            cargarComentarios(id, comentariosContainer);
-          })
-          .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+            .then(resp => {
+              if (!resp.ok) throw new Error("Error al enviar comentario");
+              inputComentario.value = "";
+              mostrarNotificacion("💬 Comentario agregado", "exito");
+              cargarComentarios(id, comentariosContainer);
+            })
+            .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
         });
+
         // --- Editar foro ---
         const btnEditar = divForo.querySelector(".btn-editar");
         btnEditar.addEventListener("click", () => {
           const tituloEl = divForo.querySelector(".foro-titulo");
           const descEl = divForo.querySelector(".foro-descripcion");
 
-          if (btnEditar.textContent === "Editar") {
-            tituloEl.contentEditable = true;
-            descEl.contentEditable = true;
-            tituloEl.style.border = "1px solid #ccc";
-            descEl.style.border = "1px solid #ccc";
-            btnEditar.textContent = "Guardar";
+          if (btnEditar.textContent === "✏️ Editar") {
+            tituloEl.contentEditable = descEl.contentEditable = true;
+            tituloEl.style.border = descEl.style.border = "1px solid #ccc";
+            btnEditar.textContent = "💾 Guardar";
           } else {
-            const nuevoTitulo = tituloEl.textContent.trim();
-            const nuevaDesc = descEl.textContent.trim();
-
             fetch(`http://localhost:8080/api/foros/${id}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ titulo: nuevoTitulo, descripcion: nuevaDesc, autorId: profesorGlobal.id })
+              body: JSON.stringify({
+                titulo: tituloEl.textContent.trim(),
+                descripcion: descEl.textContent.trim(),
+                autorId: profesorGlobal.id
+              })
             })
-            .then(resp => {
-              if (!resp.ok) throw new Error("Error al editar foro");
-              tituloEl.contentEditable = false;
-              descEl.contentEditable = false;
-              tituloEl.style.border = "none";
-              descEl.style.border = "none";
-              btnEditar.textContent = "Editar";
-              mostrarNotificacion("✏️ Foro actualizado", "exito");
-            })
-            .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
+              .then(resp => {
+                if (!resp.ok) throw new Error("Error al editar foro");
+                tituloEl.contentEditable = descEl.contentEditable = false;
+                tituloEl.style.border = descEl.style.border = "none";
+                btnEditar.textContent = "✏️ Editar";
+                mostrarNotificacion("✅ Foro actualizado", "exito");
+              })
+              .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
           }
         });
 
         // --- Eliminar foro ---
-        const btnEliminar = divForo.querySelector(".btn-eliminar");
-        btnEliminar.addEventListener("click", () => {
+        divForo.querySelector(".btn-eliminar").addEventListener("click", () => {
           if (!confirm("¿Eliminar este foro?")) return;
-
           fetch(`http://localhost:8080/api/foros/${id}`, { method: "DELETE" })
             .then(resp => {
               if (!resp.ok) throw new Error("Error al eliminar foro");
-              cargarForosProfesor();
               mostrarNotificacion("🗑️ Foro eliminado", "exito");
+              cargarForosProfesor();
             })
             .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
         });
@@ -971,35 +885,42 @@ function cargarForosProfesor() {
     })
     .catch(err => {
       console.error(err);
-      contenedor.innerHTML = "<p style='color:red;'>Error al cargar los foros</p>";
+      contenedor.innerHTML = "<p style='color:red;'>❌ Error al cargar los foros</p>";
     });
-    
-// 🔹 Cargar comentarios de un foro
-// --- Cargar comentarios de un foro ---
+}
+
+// =========================================================
+// 🔹 COMENTARIOS (modernos y editables)
+// =========================================================
 function cargarComentarios(foroId, container) {
+  container.innerHTML = "<p style='color:#6b7280;'>Cargando comentarios...</p>";
+
   fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
-    .then(resp => {
-      if (!resp.ok) throw new Error("Error al cargar comentarios");
-      return resp.json();
-    })
+    .then(resp => resp.json())
     .then(data => {
       container.innerHTML = "";
-      if (data.length === 0) {
-        container.innerHTML = "<p class='sin-comentarios'>Aún no hay comentarios 💬</p>";
+      if (!data || data.length === 0) {
+        container.innerHTML = "<p style='color:#9ca3af;'>Aún no hay comentarios 💬</p>";
         return;
       }
 
       data.forEach(c => {
         const div = document.createElement("div");
-        div.className = "comentario";
-
+        div.className = "comentario-card";
+        div.style.cssText = `
+          background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px;
+          padding:10px 14px; margin-bottom:10px;
+        `;
         div.innerHTML = `
-          <p><strong>${c.autor}</strong> <span class="fecha">${c.fechaCreacion}</span></p>
-          <p class="contenido">${c.contenido}</p>
+          <strong style="color:#1e3a8a;">👤 ${c.usuarioNombre || "Usuario " + c.usuarioId}</strong>
+          <span style="font-size:0.85em; color:#6b7280; float:right;">
+            ${new Date(c.fecha).toLocaleString()}
+          </span>
+          <p class="contenido-comentario" style="margin-top:6px;">${c.contenido}</p>
           ${
-            c.usuarioId === profesorGlobal.id 
-              ? `<button class="btn-editar" data-id="${c.id}">✏️ Editar</button>
-                 <button class="btn-eliminar" data-id="${c.id}">🗑️ Eliminar</button>`
+            c.usuarioId === profesorGlobal.id
+              ? `<button class="btn-editar" data-id="${c.idComentario}" style="background:#f59e0b; color:white; border:none; border-radius:6px; padding:3px 8px; margin-right:4px;">✏️</button>
+                 <button class="btn-eliminar" data-id="${c.idComentario}" style="background:#dc2626; color:white; border:none; border-radius:6px; padding:3px 8px;">🗑️</button>`
               : ""
           }
         `;
@@ -1007,89 +928,59 @@ function cargarComentarios(foroId, container) {
         container.appendChild(div);
       });
 
-      // Vincular eventos a botones de editar y eliminar
-      container.querySelectorAll(".btn-editar").forEach(btn => {
-        btn.addEventListener("click", () => editarComentario(btn.dataset.id, foroId, container));
-      });
-
-      container.querySelectorAll(".btn-eliminar").forEach(btn => {
-        btn.addEventListener("click", () => eliminarComentario(btn.dataset.id, foroId, container));
-      });
+      // --- Acciones ---
+      container.querySelectorAll(".btn-editar").forEach(btn =>
+        btn.addEventListener("click", () =>
+          editarComentario(btn.dataset.id, foroId, container)
+        )
+      );
+      container.querySelectorAll(".btn-eliminar").forEach(btn =>
+        btn.addEventListener("click", () =>
+          eliminarComentario(btn.dataset.id, foroId, container)
+        )
+      );
     })
     .catch(err => {
       console.error(err);
-      mostrarNotificacion("❌ " + err.message, "error");
+      container.innerHTML = `<p style="color:red;">❌ Error: ${err.message}</p>`;
     });
 }
 
-// --- Enviar nuevo comentario ---
-function enviarComentario(foroId, input, container) {
-  const contenido = input.value.trim();
-  if (!contenido) return mostrarNotificacion("⚠️ Escribe un comentario", "error");
+function editarComentario(id, foroId, container) {
+  const nuevo = prompt("✏️ Edita tu comentario:");
+  if (!nuevo || !nuevo.trim()) return;
 
-  const nuevoComentario = { contenido };
-
-  fetch(`http://localhost:8080/api/comentarios/foro/${foroId}/usuario/${profesorGlobal.id}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(nuevoComentario)
-  })
-    .then(resp => {
-      if (!resp.ok) throw new Error("Error al enviar comentario");
-      return resp.json();
-    })
-    .then(() => {
-      input.value = "";
-      mostrarNotificacion("💬 Comentario agregado", "exito");
-      cargarComentarios(foroId, container);
-    })
-    .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
-}
-
-// --- Editar comentario ---
-function editarComentario(idComentario, foroId, container) {
-  const nuevoContenido = prompt("✏️ Edita tu comentario:");
-  if (!nuevoContenido || !nuevoContenido.trim()) return;
-
-  const dto = { contenido: nuevoContenido.trim() };
-
-  fetch(`http://localhost:8080/api/comentarios/editar/${idComentario}/${profesorGlobal.id}`, {
+  fetch(`http://localhost:8080/api/comentarios/${id}/usuario/${profesorGlobal.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dto)
+    body: JSON.stringify({ contenido: nuevo.trim() })
   })
     .then(resp => {
-      if (!resp.ok) throw new Error("No tienes permiso para editar este comentario");
-      return resp.json();
-    })
-    .then(() => {
+      if (!resp.ok) throw new Error("No autorizado o error en servidor");
       mostrarNotificacion("✅ Comentario editado", "exito");
       cargarComentarios(foroId, container);
     })
     .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
 }
 
-// --- Eliminar comentario ---
-function eliminarComentario(idComentario, foroId, container) {
-  if (!confirm("¿Seguro que quieres eliminar este comentario?")) return;
+function eliminarComentario(id, foroId, container) {
+  if (!confirm("¿Eliminar este comentario?")) return;
 
-  fetch(`http://localhost:8080/api/comentarios/eliminar/${idComentario}/${profesorGlobal.id}`, {
+  fetch(`http://localhost:8080/api/comentarios/${id}/usuario/${profesorGlobal.id}`, {
     method: "DELETE"
   })
     .then(resp => {
-      if (resp.status === 204) {
-        mostrarNotificacion("🗑️ Comentario eliminado", "exito");
-        cargarComentarios(foroId, container);
-      } else {
-        throw new Error("No tienes permiso para eliminar este comentario");
-      }
+      if (!resp.ok) throw new Error("Error al eliminar comentario");
+      mostrarNotificacion("🗑️ Comentario eliminado", "exito");
+      cargarComentarios(foroId, container);
     })
     .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
 }
 
 
 
-}
+
+
 
 
 
