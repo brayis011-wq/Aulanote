@@ -685,9 +685,7 @@ function mostrarNotificacion(mensaje, tipo = "exito") {
 
 
 
-// =========================================================
-// 🔹 CARGAR FOROS DEL PROFESOR (moderno y mejorado)
-// =========================================================
+
 function cargarForosProfesor() {
   mainContent.innerHTML = `
     <h1 style="text-align:center; color:#1e3a8a; margin-bottom:25px;">💬 Foros del Profesor</h1>
@@ -714,9 +712,7 @@ function cargarForosProfesor() {
 
   const contenedor = document.getElementById("listaForos");
 
-  // ========================
-  // 🔸 Crear foro
-  // ========================
+
   document.getElementById("btnCrearForo").addEventListener("click", () => {
     const titulo = document.getElementById("tituloForo").value.trim();
     const descripcion = document.getElementById("descripcionForo").value.trim();
@@ -738,9 +734,7 @@ function cargarForosProfesor() {
       .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
   });
 
-  // ========================
-  // 🔸 Cargar foros existentes
-  // ========================
+
   fetch("http://localhost:8080/api/foros")
     .then(r => r.json())
     .then(foros => {
@@ -757,9 +751,7 @@ function cargarForosProfesor() {
         const descripcion = foro.descripcion || "Sin descripción";
         const fecha = foro.fechaCreacion ? new Date(foro.fechaCreacion).toLocaleString() : "Sin fecha";
 
-        // ========================
-        // 💬 Tarjeta de foro
-        // ========================
+
         const divForo = document.createElement("div");
         divForo.classList.add("foro-card");
         divForo.style.cssText = `
@@ -889,9 +881,7 @@ function cargarForosProfesor() {
     });
 }
 
-// =========================================================
-// 🔹 COMENTARIOS (modernos y editables)
-// =========================================================
+
 function cargarComentarios(foroId, container) {
   container.innerHTML = "<p style='color:#6b7280;'>Cargando comentarios...</p>";
 

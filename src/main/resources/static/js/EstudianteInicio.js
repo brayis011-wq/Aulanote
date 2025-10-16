@@ -14,7 +14,7 @@ toggleBtn.addEventListener("click", () => {
   sidebar.classList.toggle("collapsed");
 });
 
-// Cambiar título según sección
+
 document.getElementById("btn-inicio").addEventListener("click", () => {
   tituloSeccion.textContent = "Bienvenido Estudiante 👋";
 });
@@ -42,7 +42,7 @@ document.getElementById("btn-cursos").addEventListener("click", () => {
   tituloSeccion.textContent = "📘 Cursos";
 });
 
-  // Calendario
+  
   function cargarCalendario() {
     mainContent.innerHTML = `
       <h1 class="bienvenida">Bienvenido Estudiante 👋</h1>
@@ -66,7 +66,7 @@ document.getElementById("btn-cursos").addEventListener("click", () => {
     calendar.render();
   }
 
-  // Profesores
+  
 function cargarProfesores() {
   mainContent.innerHTML = `
     <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;"> Profesores</h1>
@@ -115,7 +115,6 @@ function cargarProfesores() {
 }
 
 
-  // Otros botones
 function cargarTareas(idUsuario) {
   mainContent.innerHTML = `
     <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">📘 Tareas</h1>
@@ -226,8 +225,6 @@ function cargarTareas(idUsuario) {
 }
 
 
-
-
 function cargarForos() {
     mainContent.innerHTML = `
         <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">Foros</h1>
@@ -333,7 +330,7 @@ function cargarForos() {
         });
 }
 
-// Función para cargar comentarios de un foro específico
+
 function cargarComentarios(foroId, contenedor) {
     fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
         .then(r => r.json())
@@ -386,11 +383,6 @@ function cargarComentarios(foroId, contenedor) {
             contenedor.innerHTML = "<p style='color:red;'>Error al cargar comentarios</p>";
         });
 }
-
-
-
-
-
 
 
   
@@ -525,7 +517,7 @@ function cargarCalificaciones() {
     });
 }
 
-// ✅ Función con diseño consistente para las tareas
+
 function verTareasCurso(idCurso, nombreCurso) {
   const detalleDiv = document.getElementById("detalleTareas");
   detalleDiv.innerHTML = `
@@ -571,7 +563,6 @@ function verTareasCurso(idCurso, nombreCurso) {
 
 
 
-// Función para mostrar tareas del curso seleccionado (sin cambios)
 function verTareasCurso(idCurso, nombreCurso) {
   const detalleDiv = document.getElementById("detalleTareas");
   detalleDiv.innerHTML = `<h2> Tareas de ${nombreCurso}</h2><p>Cargando...</p>`;
@@ -611,7 +602,6 @@ function verTareasCurso(idCurso, nombreCurso) {
       detalleDiv.innerHTML = `<p style="color:red;">❌ Error al cargar tareas</p>`;
     });
 }
-
 
 
 
@@ -678,7 +668,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", e => {
       e.preventDefault();
-      // 👉 Aquí puedes limpiar cualquier dato del localStorage si lo usas
+      
       localStorage.removeItem("usuarioLogueado"); 
 
       // Redirigir al login

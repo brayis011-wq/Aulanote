@@ -40,7 +40,7 @@ function mostrarFormularioUsuario() {
   form.style.display = form.style.display === "none" ? "block" : "none";
 }
 
-// 👉 Cargar usuarios desde backend
+//  Cargar usuarios desde backend
 function cargarUsuarios() {
   fetch("http://localhost:8080/api/usuario")
     .then(res => res.json())
@@ -65,7 +65,7 @@ function cargarUsuarios() {
     .catch(err => console.error("Error cargando usuarios:", err));
 }
 
-// 👉 Guardar o actualizar usuario
+//  Guardar o actualizar usuario
 function guardarUsuario() {
   const id = document.getElementById("idUsuario").value;
   const usuario = {
@@ -82,7 +82,7 @@ function guardarUsuario() {
   }
 
   if (id) {
-    // 👉 Editar
+    //  Editar
     fetch(`http://localhost:8080/api/usuario/actualizar/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -97,7 +97,7 @@ function guardarUsuario() {
         }
       });
   } else {
-    // 👉 Crear
+    //  Crear
     fetch("http://localhost:8080/api/usuario/crear", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -116,7 +116,7 @@ function guardarUsuario() {
   limpiarFormulario();
 }
 
-// 👉 Eliminar
+// Eliminar
 function eliminarUsuario(id) {
   if (confirm("¿Seguro que deseas eliminar este usuario?")) {
     fetch(`http://localhost:8080/api/usuario/eliminar/${id}`, { method: "DELETE" })
@@ -131,7 +131,7 @@ function eliminarUsuario(id) {
   }
 }
 
-// 👉 Editar
+// Editar
 function editarUsuario(id) {
   fetch(`http://localhost:8080/api/usuario/buscar/${id}`)
     .then(res => res.json())
@@ -147,7 +147,7 @@ function editarUsuario(id) {
     .catch(err => console.error("Error al obtener usuario:", err));
 }
 
-// 👉 Limpiar formulario
+//  Limpiar formulario
 function limpiarFormulario() {
   document.getElementById("formularioUsuario").style.display = "none";
   document.getElementById("idUsuario").value = "";
@@ -158,7 +158,7 @@ function limpiarFormulario() {
   document.getElementById("contrasenaUsuario").value = "";
   
 }
-// 👉 Cerrar sesión
+//  Cerrar sesión
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("btn-logout");
   if (logoutBtn) {

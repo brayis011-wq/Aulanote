@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("form");
 
   form.addEventListener("submit", (e) => {
-    e.preventDefault(); // 👈 evitamos que recargue la página
+    e.preventDefault(); 
 
     const correo = document.getElementById("correo").value;
     const contrasena = document.getElementById("contrasena").value;
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 👇 Aquí mandamos la petición al backend
+    
     fetch("http://localhost:8080/api/login", {
       method: "POST",
       headers: {
