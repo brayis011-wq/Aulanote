@@ -42,7 +42,121 @@ document.getElementById("btn-cursos").addEventListener("click", () => {
   tituloSeccion.textContent = "📘 Cursos";
 });
 
-  
+ 
+// Escucha el botón de mensajes (en la topbar del estudiante)
+document.getElementById("btn-mensajes").addEventListener("click", async () => {
+  if (!usuarioId) {
+    alert("⚠️ No se pudo obtener el ID del usuario. Intenta cargar tu perfil primero.");
+    return;
+  }
+  mostrarModalMensajesEstudiante();
+  await cargarMensajesRecibidosEstudiante(usuarioId);
+});
+
+// Mostrar modal con los mensajes recibidos
+function mostrarModalMensajesEstudiante() {
+  let modal = document.getElementById("modalMensajesEstudiante");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modalMensajesEstudiante";
+    modal.innerHTML = `
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <h2>📩 Mis Mensajes</h2>
+        <div id="listaMensajesEstudiante" style="max-height:300px; overflow-y:auto; margin-top:10px;">
+          <p>Cargando mensajes...</p>
+        </div>
+        <button id="cerrarModalMensajesEstudiante" class="btn-cerrar">Cerrar</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Estilos del modal
+    const style = document.createElement("style");
+    style.innerHTML = `
+      #modalMensajesEstudiante {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 9999;
+      }
+      .modal-overlay {
+        position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+      }
+      .modal-content {
+        position: relative;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 400px;
+        max-width: 90%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        z-index: 10000;
+      }
+      .btn-cerrar {
+        margin-top: 10px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .mensaje-item {
+        border-bottom: 1px solid #ddd;
+        padding: 8px 0;
+      }
+      .mensaje-item small {
+        color: #555;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  modal.style.display = "flex";
+  document.getElementById("cerrarModalMensajesEstudiante").onclick = () => {
+    modal.style.display = "none";
+  };
+}
+
+// Cargar los mensajes recibidos desde el backend
+async function cargarMensajesRecibidosEstudiante(idUsuario) {
+  const lista = document.getElementById("listaMensajesEstudiante");
+  lista.innerHTML = "<p>Cargando mensajes...</p>";
+
+  try {
+    const res = await fetch(`/api/mensajes/recibidos/${idUsuario}`);
+    if (!res.ok) throw new Error("Error al obtener mensajes");
+    const mensajes = await res.json();
+
+    if (mensajes.length === 0) {
+      lista.innerHTML = "<p>No tienes mensajes recibidos 📭</p>";
+      return;
+    }
+
+    lista.innerHTML = "";
+    mensajes.forEach(m => {
+      const div = document.createElement("div");
+      div.classList.add("mensaje-item");
+      div.innerHTML = `
+        <strong>De:</strong> ${m.remitente ? m.remitente.nombre : "Usuario desconocido"}<br>
+        <strong>Mensaje:</strong> ${m.mensaje}<br>
+        <small>${new Date(m.fecha).toLocaleString()}</small>
+      `;
+      lista.appendChild(div);
+    });
+
+  } catch (error) {
+    console.error(error);
+    lista.innerHTML = "<p>Error al cargar los mensajes ❌</p>";
+  }
+}
+
+
+
   function cargarCalendario() {
     mainContent.innerHTML = `
       <h1 class="bienvenida">Bienvenido Estudiante 👋</h1>

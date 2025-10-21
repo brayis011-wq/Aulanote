@@ -9,9 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let profesorGlobal = { id: null, nombre: "" };
 
 
-  // ----------------------------
-  // Helpers de fecha
-  // ----------------------------
+ 
   function toInputDatetimeLocal(isoString) {
     if (!isoString) return "";
     const d = new Date(isoString);
@@ -54,7 +52,116 @@ document.addEventListener('DOMContentLoaded', function () {
       return null;
     }
   }
- 
+ const idProfesor = localStorage.getItem("idUsuario") || 1; 
+
+
+document.getElementById("btn-mensajes").addEventListener("click", async () => {
+  mostrarModalMensajes();
+  await cargarMensajesRecibidos(idProfesor);
+});
+
+
+function mostrarModalMensajes() {
+  let modal = document.getElementById("modalMensajes");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modalMensajes";
+    modal.innerHTML = `
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <h2>📩 Mensajes Recibidos</h2>
+        <div id="listaMensajes" style="max-height:300px; overflow-y:auto; margin-top:10px;">
+          <p>Cargando mensajes...</p>
+        </div>
+        <button id="cerrarModalMensajes" class="btn-cerrar">Cerrar</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+  
+    const style = document.createElement("style");
+    style.innerHTML = `
+      #modalMensajes {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 9999;
+      }
+      .modal-overlay {
+        position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+      }
+      .modal-content {
+        position: relative;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 400px;
+        max-width: 90%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        z-index: 10000;
+      }
+      .btn-cerrar {
+        margin-top: 10px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .mensaje-item {
+        border-bottom: 1px solid #ddd;
+        padding: 8px 0;
+      }
+      .mensaje-item small {
+        color: #555;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  modal.style.display = "flex";
+  document.getElementById("cerrarModalMensajes").onclick = () => {
+    modal.style.display = "none";
+  };
+}
+
+
+async function cargarMensajesRecibidos(idUsuario) {
+  const lista = document.getElementById("listaMensajes");
+  lista.innerHTML = "<p>Cargando mensajes...</p>";
+
+  try {
+    const res = await fetch(`/api/mensajes/recibidos/${idUsuario}`);
+    if (!res.ok) throw new Error("Error al obtener mensajes");
+    const mensajes = await res.json();
+
+    if (mensajes.length === 0) {
+      lista.innerHTML = "<p>No tienes mensajes recibidos 📭</p>";
+      return;
+    }
+
+    lista.innerHTML = "";
+    mensajes.forEach(m => {
+      const div = document.createElement("div");
+      div.classList.add("mensaje-item");
+      div.innerHTML = `
+        <strong>De:</strong> ${m.remitente ? m.remitente.nombre : "Usuario desconocido"}<br>
+        <strong>Mensaje:</strong> ${m.mensaje}<br>
+        <small>${new Date(m.fecha).toLocaleString()}</small>
+      `;
+      lista.appendChild(div);
+    });
+
+  } catch (error) {
+    console.error(error);
+    lista.innerHTML = "<p>Error al cargar los mensajes ❌</p>";
+  }
+}
+
   function cargarCalendario() {
     mainContent.innerHTML = `
       <h1 class="bienvenida">Bienvenido ${profesorGlobal.nombre || "Profesor"} 👋</h1>
@@ -181,7 +288,7 @@ async function cargarCrearTareas(tareaToEdit = null) {
 
   cargarListaTareas("mias");
 }
-// LISTAR TAREAS
+
 async function cargarListaTareas(filtro = "mias") {
   const container = document.getElementById("listaTareasContainer");
   if (!container) return;
@@ -266,7 +373,7 @@ async function cargarListaTareas(filtro = "mias") {
     document.getElementById("tbodyTareas").innerHTML = `<tr><td colspan="7">⚠️ Error al cargar las tareas</td></tr>`;
   }
 }
-// EDITAR Y ELIMINAR
+
 async function editarTarea(id) {
   try {
     const resp = await fetch(`/api/tareas/buscar/${id}`);
@@ -299,7 +406,7 @@ async function eliminarTarea(id) {
     alert("⚠️ Error de conexión al eliminar");
   }
 }
-// CARGAR CURSOS EN SELECT
+
 async function cargarCursosSelect() {
   if (!profesorGlobal?.id) {
     console.error("No se encontró el ID del profesor");
@@ -381,7 +488,7 @@ async function cargarCursosSelect() {
   
   function cargarestudiantes() {
   mainContent.innerHTML = `
-    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;"> Estudiantes</h1>
+    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">Estudiantes</h1>
     <div id="estudiantesContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px;"></div>
   `;
 
@@ -399,23 +506,37 @@ async function cargarCursosSelect() {
       }
 
       estudiantes.forEach(u => {
-        container.innerHTML += `
-          <div style="background:white; border-radius:12px; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align:center; transition:transform .2s;">
-            <img src="icons/profile-1335-svgrepo-com.svg" alt="Avatar" style="width:80px; height:80px; border-radius:50%; margin-bottom:10px;">
-            <h2 style="color:#1e3a8a; font-size:18px; margin:5px 0;">${u.nombre} ${u.apellido}</h2>
-            <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Email:</strong> ${u.email}</p>
-            <p style="font-size:13px; color:#888; margin:5px 0;">${u.cargo}</p>
-            <button style="margin-top:10px; padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">
-              Ver perfil
-            </button>
-          </div>
+        const card = document.createElement("div");
+        card.style.cssText = `
+          background:white; border-radius:12px; padding:20px;
+          box-shadow:0 4px 10px rgba(0,0,0,0.1);
+          text-align:center; transition:transform .2s;
         `;
-      });
 
-      // Animación hover
-      document.querySelectorAll("#estudiantesContainer > div").forEach(card => {
+        card.innerHTML = `
+          <img src="icons/profile-1335-svgrepo-com.svg" alt="Avatar" style="width:80px; height:80px; border-radius:50%; margin-bottom:10px;">
+          <h2 style="color:#1e3a8a; font-size:18px; margin:5px 0;">${u.nombre} ${u.apellido}</h2>
+          <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Email:</strong> ${u.email}</p>
+          <p style="font-size:13px; color:#888; margin:5px 0;">${u.cargo}</p>
+          <button class="btnEnviarMensaje" data-id="${u.id}" data-nombre="${u.nombre} ${u.apellido}"
+            style="margin-top:10px; padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">
+            ✉️ Enviar mensaje
+          </button>
+        `;
+
         card.addEventListener("mouseenter", () => card.style.transform = "scale(1.05)");
         card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
+
+        container.appendChild(card);
+      });
+
+      // Asociar evento a cada botón de mensaje
+      document.querySelectorAll(".btnEnviarMensaje").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idDestinatario = btn.dataset.id;
+          const nombreDestinatario = btn.dataset.nombre;
+          mostrarModalEnviarMensaje(idDestinatario, nombreDestinatario);
+        });
       });
     })
     .catch(err => {
@@ -424,7 +545,82 @@ async function cargarCursosSelect() {
         <p style="grid-column:1/-1; text-align:center; color:red;">❌ Error al cargar estudiantes</p>
       `;
     });
+function mostrarModalEnviarMensaje(idDestinatario, nombreDestinatario) {
+  let modal = document.getElementById("modalEnviarMensaje");
+  if (modal) modal.remove();
+
+  modal = document.createElement("div");
+  modal.id = "modalEnviarMensaje";
+  modal.innerHTML = `
+    <div class="overlay"></div>
+    <div class="modal">
+      <h3>Enviar mensaje a ${nombreDestinatario}</h3>
+      <textarea id="mensajeTexto" placeholder="Escribe tu mensaje aquí..." rows="4"
+        style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea>
+      <div style="margin-top:10px; text-align:right;">
+        <button id="cancelarMensaje" style="background:#ccc; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;">Cancelar</button>
+        <button id="enviarMensaje" style="background:#3b82f6; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;">Enviar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const style = document.createElement("style");
+  style.innerHTML = `
+    #modalEnviarMensaje {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      display:flex; align-items:center; justify-content:center; z-index:9999;
+    }
+    #modalEnviarMensaje .overlay {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.5);
+    }
+    #modalEnviarMensaje .modal {
+      position:relative; background:white; padding:20px;
+      border-radius:10px; width:350px; z-index:10000;
+    }
+  `;
+  document.head.appendChild(style);
+
+  document.getElementById("cancelarMensaje").onclick = () => modal.remove();
+  document.getElementById("enviarMensaje").onclick = async () => {
+    const texto = document.getElementById("mensajeTexto").value.trim();
+    if (texto === "") {
+      alert("⚠️ Escribe un mensaje antes de enviarlo");
+      return;
+    }
+
+    // ID del profesor logueado
+    const idRemitente = localStorage.getItem("idUsuario") || 1;
+
+    const mensaje = {
+      remitente: { id: idRemitente },
+      destinatario: { id: idDestinatario },
+      mensaje: texto
+    };
+
+    try {
+      const res = await fetch("http://localhost:8080/api/mensajes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mensaje)
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      alert("✅ Mensaje enviado con éxito a " + nombreDestinatario);
+      modal.remove();
+    } catch (error) {
+      console.error("Error al enviar mensaje:", error);
+      alert("❌ No se pudo enviar el mensaje. Revisa la consola para más detalles.");
+    }
+  };
 }
+
+
+
+}
+
 
 
 function cargarCalificaciones() {
@@ -679,11 +875,6 @@ function mostrarNotificacion(mensaje, tipo = "exito") {
     setTimeout(() => notificacion.remove(), 300);
   }, 3000);
 }
-
-
-
-
-
 
 
 function cargarForosProfesor() {
@@ -966,12 +1157,6 @@ function eliminarComentario(id, foroId, container) {
     })
     .catch(err => mostrarNotificacion("❌ " + err.message, "error"));
 }
-
-
-
-
-
-
 
 
 function cargarCursos() {

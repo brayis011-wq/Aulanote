@@ -6,14 +6,25 @@ import com.proyecto.spring.aulanote.aulanote.repository.MensajesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class MensajesService {
 
+
     @Autowired
     private MensajesRepository mensajesRepository;
+
+    public Mensajes enviarMensaje(Mensajes mensaje) {
+        // Si la fecha no viene desde el frontend, se asigna automáticamente
+        if (mensaje.getFecha() == null) {
+            mensaje.setFecha(LocalDateTime.now());
+        }
+        return mensajesRepository.save(mensaje);
+    }
+
 
     public List<Mensajes> listarMensajes() {
         return mensajesRepository.findAll();
@@ -23,9 +34,7 @@ public class MensajesService {
         return mensajesRepository.findById(id);
     }
 
-    public Mensajes enviarMensaje(Mensajes mensaje) {
-        return mensajesRepository.save(mensaje);
-    }
+ 
 
     public Boolean eliminarMensaje(int id) {
         return mensajesRepository.findById(id).map(mensaje -> {

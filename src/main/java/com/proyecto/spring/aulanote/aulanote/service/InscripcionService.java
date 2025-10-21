@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.proyecto.spring.aulanote.aulanote.entity.Curso;
+
 import com.proyecto.spring.aulanote.aulanote.entity.Inscripcion;
 import com.proyecto.spring.aulanote.aulanote.entity.Usuario;
 import com.proyecto.spring.aulanote.aulanote.repository.CursoRepository;
