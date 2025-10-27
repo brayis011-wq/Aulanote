@@ -108,4 +108,60 @@ public class ComentarioForoService {
             return false;
         }).orElse(false);
     }
+    // 🔹 Responder a un comentario
+public ComentarioForoDTO responderComentario(Integer foroId, Integer comentarioPadreId, Integer usuarioId, String contenido) {
+    if (foroId == null || comentarioPadreId == null || usuarioId == null || contenido == null || contenido.trim().isEmpty()) {
+        throw new IllegalArgumentException("Datos inválidos para responder comentario");
+    }
+
+    // Crear entidades referenciales sin tener que cargarlas completamente
+    Foro foro = new Foro();
+    foro.setId(foroId);
+
+    Usuario usuario = usuarioRepo.findById(usuarioId)
+            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+    ComentarioForo comentarioPadre = comentarioRepo.findById(comentarioPadreId)
+            .orElseThrow(() -> new IllegalArgumentException("Comentario padre no encontrado"));
+
+    ComentarioForo respuesta = new ComentarioForo();
+    respuesta.setContenido(contenido);
+    respuesta.setForo(foro);
+    respuesta.setUsuario(usuario);
+    respuesta.setComentarioPadre(comentarioPadre);
+
+    ComentarioForo guardado = comentarioRepo.save(respuesta);
+
+    return new ComentarioForoDTO(
+            guardado.getIdComentario(),
+            usuario.getNombre() + " " + usuario.getApellido(),
+            guardado.getContenido(),
+            guardado.getFechaCreacion() != null
+                    ? guardado.getFechaCreacion().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                    : "",
+            usuario.getId()
+    );
+}
+
+
+// 🔹 Listar respuestas de un comentario específico
+public List<ComentarioForoDTO> listarRespuestas(Integer comentarioPadreId) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    return comentarioRepo.findByComentarioPadre_IdComentarioOrderByFechaCreacionAsc(comentarioPadreId)
+            .stream()
+            .map(r -> {
+                ComentarioForoDTO dto = new ComentarioForoDTO(
+                        r.getIdComentario(),
+                        r.getUsuario().getNombre() + " " + r.getUsuario().getApellido(),
+                        r.getContenido(),
+                        r.getFechaCreacion() != null ? r.getFechaCreacion().format(formatter) : "",
+                        r.getUsuario().getId()
+                );
+                dto.setComentarioPadreId(comentarioPadreId);
+                return dto;
+            })
+            .collect(Collectors.toList());
+}
+
 }

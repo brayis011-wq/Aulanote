@@ -2,6 +2,7 @@ package com.proyecto.spring.aulanote.aulanote.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "comentarios_foro")
@@ -15,7 +16,8 @@ public class ComentarioForo {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String contenido;
 
-    @Column(name = "fecha_creacion", nullable = false, updatable = false, insertable = false)
+    // ✅ Fecha de creación automática al guardar el comentario
+    @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 
     // 🔹 Relación con Usuario
@@ -28,7 +30,22 @@ public class ComentarioForo {
     @JoinColumn(name = "id_foro", nullable = false)
     private Foro foro;
 
-    // Getters y setters
+    // 🔹 Comentario padre (para respuestas)
+    @ManyToOne
+    @JoinColumn(name = "comentario_padre_id")
+    private ComentarioForo comentarioPadre;
+
+    // 🔹 Lista de respuestas
+    @OneToMany(mappedBy = "comentarioPadre", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ComentarioForo> respuestas;
+
+    // ✅ Método que se ejecuta antes de insertar en la base de datos
+    @PrePersist
+    protected void onCreate() {
+        this.fechaCreacion = LocalDateTime.now();
+    }
+
+    // --- Getters y Setters ---
     public Integer getIdComentario() {
         return idComentario;
     }
@@ -67,5 +84,21 @@ public class ComentarioForo {
 
     public void setForo(Foro foro) {
         this.foro = foro;
+    }
+
+    public ComentarioForo getComentarioPadre() {
+        return comentarioPadre;
+    }
+
+    public void setComentarioPadre(ComentarioForo comentarioPadre) {
+        this.comentarioPadre = comentarioPadre;
+    }
+
+    public List<ComentarioForo> getRespuestas() {
+        return respuestas;
+    }
+
+    public void setRespuestas(List<ComentarioForo> respuestas) {
+        this.respuestas = respuestas;
     }
 }

@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function () {
   const mainContent = document.getElementById("main-content");
   const botones = document.querySelectorAll(".menu a");
@@ -12,6 +13,7 @@ const tituloSeccion = document.getElementById("tituloSeccion");
 
 toggleBtn.addEventListener("click", () => {
   sidebar.classList.toggle("collapsed");
+  
 });
 
 
@@ -227,9 +229,32 @@ function cargarProfesores() {
       `;
     });
 }
+// Variable global
+window.usuarioId = null; // variable global
 
+// ------------------ Cargar tareas ------------------
+async function cargarTareas() {
+  const mainContent = document.getElementById("main-content");
+  const idUsuario = window.usuarioId; // usamos la variable global
 
-function cargarTareas(idUsuario) {
+  if (!idUsuario) {
+    mainContent.innerHTML = `
+      <div style="text-align:center; padding:40px;">
+        <h2 style="color:#dc2626;">⚠️ Error</h2>
+        <p style="color:#666; margin:20px 0;">No se pudo identificar al usuario.</p>
+        <p style="color:#666;">Por favor, carga tu perfil primero.</p>
+        <button onclick="cargarPerfil()" style="
+          padding:12px 24px; background:#2563eb; color:white; 
+          border:none; border-radius:6px; cursor:pointer; margin-top:20px;">
+          Cargar Perfil
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  console.log("✅ Cargando tareas para usuario ID:", idUsuario);
+
   mainContent.innerHTML = `
     <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">📘 Tareas</h1>
     <div id="tareasContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>
@@ -243,100 +268,150 @@ function cargarTareas(idUsuario) {
           background:white; border-radius:12px; padding:25px; width:600px; max-width:95%;
           box-shadow:0 12px 30px rgba(0,0,0,0.4); position:relative;">
         <span id="cerrarModal" style="
-            position:absolute; top:10px; right:15px; cursor:pointer; font-size:22px;">&times;</span>
+            position:absolute; top:10px; right:15px; cursor:pointer; font-size:22px; color:#666;">&times;</span>
         <div id="infoActividad" style="margin-bottom:20px;"></div>
         <h2 style="color:#1e3a8a; margin-bottom:15px;">📤 Subir Tarea</h2>
         <input type="text" id="nombreTareaModal" placeholder="Nombre de la tarea" style="padding:10px; margin-bottom:10px; width:100%; border-radius:6px; border:1px solid #ccc;">
-        <input type="file" id="archivoTareaModal" style="margin-bottom:15px; width:100%;">
+        <input type="file" id="archivoTareaModal" accept=".pdf" style="margin-bottom:15px; width:100%;">
         <button id="btnSubirModal" style="padding:12px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; width:100%; font-weight:bold;">Subir Tarea</button>
+        <div id="mensajeEstado" style="margin-top:10px; text-align:center; color:#2563eb;"></div>
       </div>
     </div>
   `;
 
-  fetch("http://localhost:8080/api/tareas")
-    .then(r => r.json())
-    .then(data => {
-      const container = document.getElementById("tareasContainer");
-      container.innerHTML = "";
+  try {
+    const response = await fetch("http://localhost:8080/api/tareas");
+    if (!response.ok) throw new Error("Error en la respuesta del servidor");
+    const data = await response.json();
+    console.log("📋 Tareas recibidas:", data);
 
-      if (data.length === 0) {
-        container.innerHTML = `<p style="grid-column:1/-1; text-align:center;">⚠️ No hay tareas registradas</p>`;
-        return;
-      }
+    const container = document.getElementById("tareasContainer");
+    container.innerHTML = "";
 
-      data.forEach(t => {
-        const fecha = new Date(t.fechaLimite).toLocaleString("es-CO", {
-          day: "2-digit", month: "2-digit", year: "numeric", 
-          hour: "2-digit", minute: "2-digit"
-        });
+    if (data.length === 0) {
+      container.innerHTML = `<p style="grid-column:1/-1; text-align:center;">⚠️ No hay tareas registradas</p>`;
+      return;
+    }
 
-        const card = document.createElement("div");
-        card.style.cssText = "background:white; border-radius:12px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.1); transition:transform .2s;";
-        card.innerHTML = `
-          <h2 style="color:#1e3a8a; font-size:18px; margin:0 0 10px;">${t.nombreActividad}</h2>
-          <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Fecha límite:</strong> ${fecha}</p>
-          <p style="font-size:14px; color:#333; margin:10px 0;">${t.descripcion}</p>
-          <p style="font-size:13px; color:#888; margin:5px 0;">Profesor ID: ${t.profesorId}</p>
-          <button class="btnVerMas" style="margin-top:10px; padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">Ver más</button>
-        `;
-        container.appendChild(card);
-
-        card.addEventListener("mouseenter", () => card.style.transform = "scale(1.03)");
-        card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
-
-        // Botón "Ver más" abre modal
-        const btnVerMas = card.querySelector(".btnVerMas");
-        btnVerMas.addEventListener("click", () => {
-          const modal = document.getElementById("modalTarea");
-          modal.style.display = "flex";
-
-          const infoModal = document.getElementById("infoActividad");
-          infoModal.innerHTML = `
-            <h3 style="color:#1e3a8a; margin-bottom:8px;">${t.nombreActividad}</h3>
-            <p style="font-size:14px; color:#555; margin:3px 0;"><strong>Descripción:</strong> ${t.descripcion}</p>
-            <p style="font-size:13px; color:#888; margin:3px 0;"><strong>Fecha límite:</strong> ${fecha}</p>
-            <p style="font-size:13px; color:#888; margin:3px 0;"><strong>Profesor ID:</strong> ${t.profesorId}</p>
-          `;
-
-          document.getElementById("cerrarModal").onclick = () => modal.style.display = "none";
-
-          const btnSubir = document.getElementById("btnSubirModal");
-          btnSubir.onclick = () => {
-            const nombre = document.getElementById("nombreTareaModal").value;
-            const archivo = document.getElementById("archivoTareaModal").files[0];
-
-            if(!nombre || !archivo){
-              alert("Completa el nombre y selecciona un archivo");
-              return;
-            }
-
-            const formData = new FormData();
-            formData.append("nombreTarea", nombre);
-            formData.append("archivo", archivo);
-            formData.append("idUsuario", idUsuario); // 🔹 importante
-
-            fetch(`http://localhost:8080/api/entregas/curso/${t.id}/subir`, {
-              method: "POST",
-              body: formData
-            })
-            .then(resp => {
-              if(!resp.ok) throw new Error("Error al subir tarea");
-              alert("Tarea subida correctamente");
-              modal.style.display = "none";
-              cargarTareas(idUsuario); // recarga lista de tareas
-            })
-            .catch(err => alert(err.message));
-          };
-        });
+    data.forEach(t => {
+      const fecha = new Date(t.fechaLimite).toLocaleString("es-CO", {
+        day: "2-digit", month: "2-digit", year: "numeric", 
+        hour: "2-digit", minute: "2-digit"
       });
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById("tareasContainer").innerHTML = `
-        <p style="grid-column:1/-1; text-align:center; color:red;">❌ Error al cargar tareas</p>
+
+      const card = document.createElement("div");
+      card.style.cssText = "background:white; border-radius:12px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.1); transition:transform .2s;";
+      card.innerHTML = `
+        <h2 style="color:#1e3a8a; font-size:18px; margin:0 0 10px;">${t.nombreActividad}</h2>
+        <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Curso:</strong> ${t.curso?.nombre || 'Sin curso'}</p>
+        <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Fecha límite:</strong> ${fecha}</p>
+        <p style="font-size:14px; color:#333; margin:10px 0;">${t.descripcion}</p>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button class="btnVerMas" style="padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">Ver/Entregar</button>
+        </div>
       `;
+      container.appendChild(card);
+
+      card.addEventListener("mouseenter", () => card.style.transform = "scale(1.03)");
+      card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
+
+      const btnVerMas = card.querySelector(".btnVerMas");
+      btnVerMas.addEventListener("click", () => abrirModalTarea(t, fecha, idUsuario));
     });
+  } catch (err) {
+    console.error("❌ Error al cargar tareas:", err);
+    document.getElementById("tareasContainer").innerHTML = `
+      <p style="grid-column:1/-1; text-align:center; color:red;">❌ Error al cargar tareas: ${err.message}</p>
+    `;
+  }
 }
+
+// ------------------ Modal y subida ------------------
+function abrirModalTarea(tarea, fecha, idUsuario) {
+  const modal = document.getElementById("modalTarea");
+  modal.style.display = "flex";
+
+  const infoModal = document.getElementById("infoActividad");
+  infoModal.innerHTML = `
+    <h3 style="color:#1e3a8a; margin-bottom:8px;">${tarea.nombreActividad}</h3>
+    <p style="font-size:14px; color:#555; margin:3px 0;"><strong>Curso:</strong> ${tarea.curso?.nombre || 'Sin curso'}</p>
+    <p style="font-size:14px; color:#555; margin:3px 0;"><strong>Descripción:</strong> ${tarea.descripcion}</p>
+    <p style="font-size:13px; color:#888; margin:3px 0;"><strong>Fecha límite:</strong> ${fecha}</p>
+  `;
+
+  document.getElementById("cerrarModal").onclick = () => {
+    modal.style.display = "none";
+    document.getElementById("nombreTareaModal").value = "";
+    document.getElementById("archivoTareaModal").value = "";
+    document.getElementById("mensajeEstado").textContent = "";
+  };
+
+  const btnSubir = document.getElementById("btnSubirModal");
+  btnSubir.onclick = async () => {
+    const nombre = document.getElementById("nombreTareaModal").value.trim();
+    const archivo = document.getElementById("archivoTareaModal").files[0];
+    const mensajeEstado = document.getElementById("mensajeEstado");
+
+    if (!nombre || !archivo) {
+      mensajeEstado.textContent = "❌ Completa el nombre y selecciona un archivo PDF";
+      mensajeEstado.style.color = "red";
+      return;
+    }
+
+    if (archivo.type !== "application/pdf") {
+      mensajeEstado.textContent = "❌ Solo se permiten archivos PDF";
+      mensajeEstado.style.color = "red";
+      return;
+    }
+
+    const idCurso = tarea.curso?.idCurso;
+    if (!idCurso) {
+      mensajeEstado.textContent = "❌ Esta tarea no tiene un curso asociado";
+      mensajeEstado.style.color = "red";
+      console.error("❌ Tarea sin curso:", tarea);
+      return;
+    }
+
+    mensajeEstado.textContent = "⏳ Subiendo archivo...";
+    mensajeEstado.style.color = "#2563eb";
+    btnSubir.disabled = true;
+
+    const formData = new FormData();
+    formData.append("nombreTarea", nombre);
+    formData.append("archivo", archivo);
+    formData.append("idUsuario", idUsuario); // ✅ siempre definido
+
+    try {
+      const resp = await fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/subir`, {
+        method: "POST",
+        body: formData
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || "Error al subir tarea");
+      }
+      const mensaje = await resp.text();
+      mensajeEstado.textContent = "✅ " + mensaje;
+      mensajeEstado.style.color = "#10b981";
+      setTimeout(() => {
+        modal.style.display = "none";
+        document.getElementById("nombreTareaModal").value = "";
+        document.getElementById("archivoTareaModal").value = "";
+        mensajeEstado.textContent = "";
+        cargarTareas();
+      }, 2000);
+    } catch (err) {
+      console.error("❌ Error al subir:", err);
+      mensajeEstado.textContent = "❌ " + err.message;
+      mensajeEstado.style.color = "red";
+    } finally {
+      btnSubir.disabled = false;
+    }
+  };
+}
+
+
+
 
 
 function cargarForos() {
@@ -501,58 +576,72 @@ function cargarComentarios(foroId, contenedor) {
 
   
 
-let usuarioId = null; // variable global para almacenar el id del usuario logueado
 
-function cargarPerfil() {
+
+let usuarioId = null; // variable global que guarda el ID del usuario
+
+async function cargarPerfil() {
+  const mainContent = document.getElementById("main-content");
   mainContent.innerHTML = "<h1>Perfil</h1><p>Cargando...</p>";
 
-  fetch("http://localhost:8080/api/usuario/perfil")
-    .then(r => r.json())
-    .then(usuario => {
-      usuarioId = usuario.id;
+  try {
+    const resp = await fetch("http://localhost:8080/api/usuario/perfil");
+    if (!resp.ok) throw new Error("Error al obtener perfil");
+    const usuario = await resp.json();
 
-      mainContent.innerHTML = `
-        <div style="max-width:900px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:25px;">
+    // Guardamos el ID globalmente
+    window.usuarioId = usuario.id;
 
-          <!-- Información del perfil -->
-          <div class="card" style="text-align:center;">
-            <img src="icons/3106807.png" alt="Foto perfil" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
-            <h2>${usuario.nombre} ${usuario.apellido}</h2>
-            <p><strong>Correo:</strong> ${usuario.email}</p>
-            <p><strong>Cargo:</strong> ${usuario.cargo}</p>
-            <button style="margin-top:10px; padding:8px 14px; border-radius:8px; border:none; background:#3b82f6; color:white; cursor:pointer; transition:all 0.25s ease;" 
+    mainContent.innerHTML = `
+      <div style="max-width:900px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:25px;">
+        <!-- Información del perfil -->
+        <div class="card" style="text-align:center;">
+          <img src="icons/3106807.png" alt="Foto perfil" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
+          <h2>${usuario.nombre} ${usuario.apellido}</h2>
+          <p><strong>Correo:</strong> ${usuario.email}</p>
+          <p><strong>Cargo:</strong> ${usuario.cargo}</p>
+          <button style="
+              margin-top:10px; 
+              padding:8px 14px; 
+              border-radius:8px; 
+              border:none; 
+              background:#3b82f6; 
+              color:white; 
+              cursor:pointer; 
+              transition:all 0.25s ease;" 
               onmouseover="this.style.transform='scale(1.05)'" 
               onmouseout="this.style.transform='scale(1)'"
-              onclick="alert('Aquí luego implementamos subir foto')">Cambiar foto</button>
+              onclick="alert('Aquí luego implementamos subir foto')">
+            Cambiar foto
+          </button>
+        </div>
+
+        <!-- Indicadores de estadísticas -->
+        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center;">
+          <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
+            <h3>Cursos completados</h3>
+            <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">7</p>
           </div>
 
-          <!-- Indicadores de estadísticas -->
-          <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center;">
+          <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
+            <h3>Tareas pendientes</h3>
+            <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">5</p>
+          </div>
 
-            <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
-              <h3>Cursos completados</h3>
-              <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">7</p>
-            </div>
-
-            <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
-              <h3>Tareas pendientes</h3>
-              <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">5</p>
-            </div>
-
-            <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
-              <h3>Participación en foros</h3>
-              <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">12</p>
-            </div>
-
+          <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
+            <h3>Participación en foros</h3>
+            <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">12</p>
           </div>
         </div>
-      `;
-    })
-    .catch(err => {
-      console.error(err);
-      mainContent.innerHTML = "<h1>Perfil</h1><p>❌ Error al cargar perfil</p>";
-    });
+      </div>
+    `;
+
+  } catch (err) {
+    console.error(err);
+    mainContent.innerHTML = "<h1>Perfil</h1><p style='color:red;'>❌ Error al cargar perfil</p>";
+  }
 }
+
 
   
 function cargarCalificaciones() {

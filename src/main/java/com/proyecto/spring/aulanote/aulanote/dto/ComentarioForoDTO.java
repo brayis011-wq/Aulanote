@@ -7,6 +7,8 @@ public class ComentarioForoDTO {
     private String contenido;
     private String fecha;
     private Integer usuarioId;
+    private Integer comentarioPadreId;
+
 
     public ComentarioForoDTO(Integer idComentario, String autor, String contenido, String fecha, Integer usuarioId) {
         this.idComentario = idComentario;
@@ -14,6 +16,7 @@ public class ComentarioForoDTO {
         this.contenido = contenido;
         this.fecha = fecha;
         this.usuarioId = usuarioId;
+        this.comentarioPadreId = null;
     }
 
     public Integer getIdComentario() { return idComentario; }
@@ -30,4 +33,7 @@ public class ComentarioForoDTO {
 
     public Integer getUsuarioId() { return usuarioId; }
     public void setUsuarioId(Integer usuarioId) { this.usuarioId = usuarioId; }
+
+    public Integer getComentarioPadreId() { return comentarioPadreId; }
+    public void setComentarioPadreId(Integer comentarioPadreId) { this.comentarioPadreId = comentarioPadreId; }
 }
