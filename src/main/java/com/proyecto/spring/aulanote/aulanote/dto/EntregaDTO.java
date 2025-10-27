@@ -2,14 +2,12 @@ package com.proyecto.spring.aulanote.aulanote.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-
-// ✅ Importar la entidad Entrega
 import com.proyecto.spring.aulanote.aulanote.entity.Entrega;
 
 public class EntregaDTO {
     private Integer idEntrega;
     private Integer idUsuario;
+    private String nombreUsuario; // ✅ nuevo campo
     private String nombreTarea;
     private BigDecimal calificacion;
     private LocalDateTime fechaEntrega;
@@ -21,6 +19,13 @@ public class EntregaDTO {
         this.nombreTarea = e.getNombreTarea();
         this.calificacion = e.getCalificacion();
         this.fechaEntrega = e.getFechaEntrega();
+
+        // ✅ Si la entidad Entrega tiene relación con Usuario, podemos obtener el nombre directamente:
+        if (e.getUsuario() != null) {
+            this.nombreUsuario = e.getUsuario().getNombre() + " " + e.getUsuario().getApellido();
+        } else {
+            this.nombreUsuario = "Usuario " + e.getIdUsuario(); // fallback
+        }
     }
 
     // Getters y Setters
@@ -38,6 +43,14 @@ public class EntregaDTO {
 
     public void setIdUsuario(Integer idUsuario) {
         this.idUsuario = idUsuario;
+    }
+
+    public String getNombreUsuario() {
+        return nombreUsuario;
+    }
+
+    public void setNombreUsuario(String nombreUsuario) {
+        this.nombreUsuario = nombreUsuario;
     }
 
     public String getNombreTarea() {
@@ -63,6 +76,4 @@ public class EntregaDTO {
     public void setFechaEntrega(LocalDateTime fechaEntrega) {
         this.fechaEntrega = fechaEntrega;
     }
-
-    
 }

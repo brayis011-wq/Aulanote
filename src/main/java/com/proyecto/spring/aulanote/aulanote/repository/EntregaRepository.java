@@ -26,5 +26,7 @@ public interface EntregaRepository extends JpaRepository<Entrega, Integer> {
        "WHERE e.idUsuario = :idUsuario " +
        "GROUP BY e.curso.idCurso, e.curso.nombre")
 List<Object[]> obtenerPromedioPorUsuario(@Param("idUsuario") Integer idUsuario);
+List<Entrega> findByIdUsuario(Integer idUsuario);
+
 
 }

@@ -822,11 +822,10 @@ function cargarCalificaciones() {
 }
 
 
-// ====================== 🔹 VER CALIFICACIONES POR CURSO ======================
-// ====================== 🔹 VER CALIFICACIONES DE UN CURSO ======================
+
 function verCalificacionesCurso(idCurso, nombreCurso) {
   const detalleDiv = document.getElementById("detalleCalificaciones");
-  console.log("📘 Curso seleccionado:", idCurso, nombreCurso);
+  console.log("📘 Cargando calificaciones para curso:", idCurso, nombreCurso);
 
   detalleDiv.innerHTML = `
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
@@ -850,13 +849,21 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
   `;
   document.head.appendChild(style);
 
-  // 🔹 Obtener entregas del curso
+  // 🔹 Cargar entregas desde la API
   fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/tareas`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+    .then(async res => {
+      console.log("📡 Respuesta del servidor:", res.status);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Error HTTP ${res.status}: ${errorText}`);
+      }
+
       return res.json();
     })
     .then(entregas => {
+      console.log("✅ Entregas recibidas:", entregas);
+
       if (!Array.isArray(entregas) || entregas.length === 0) {
         detalleDiv.innerHTML = `
           <h2 style="font-size:1.8rem; color:#1e40af;">📘 ${nombreCurso}</h2>
@@ -868,9 +875,9 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
       let html = `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:20px;">`;
 
       entregas.forEach(e => {
-        const idEntrega = e.idEntrega;
-        const nombreTarea = e.nombreTarea;
-        const idUsuario = e.idUsuario;
+        const idEntrega = e.idEntrega ?? "—";
+        const nombreTarea = e.nombreTarea ?? "Sin nombre";
+        const nombreUsuario = e.nombreUsuario || `Alumno ${e.idUsuario ?? "—"}`;
         const calificacion = e.calificacion ?? "";
         const fechaEntrega = e.fechaEntrega ? new Date(e.fechaEntrega).toLocaleString() : "No registrada";
         const progreso = calificacion ? Math.min(calificacion, 100) : 0;
@@ -891,7 +898,7 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
               </span>
             </div>
 
-            <p style="margin:10px 0 6px; color:#374151;">👤 <strong>Alumno ${idUsuario}</strong></p>
+            <p style="margin:10px 0 6px; color:#374151;">👤 <strong>${nombreUsuario}</strong></p>
             <p style="margin:0 0 12px; color:#6b7280;">📅 ${fechaEntrega}</p>
 
             <div style="margin-bottom:10px;">
@@ -928,36 +935,37 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
       html += `</div>`;
       detalleDiv.innerHTML = html;
 
-      // --- Guardar calificación ---
-      detalleDiv.querySelectorAll(".btn-guardar").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const entregaId = btn.dataset.id;
-          const inputNota = document.getElementById(`nota-${entregaId}`);
-          const nuevaNota = Number(inputNota.value);
+detalleDiv.querySelectorAll(".btn-guardar").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const entregaId = btn.dataset.id;
+    const inputNota = document.getElementById(`nota-${entregaId}`);
+    const nuevaNota = Number(inputNota.value);
 
-          if (isNaN(nuevaNota) || nuevaNota < 0 || nuevaNota > 100) {
-            alert("⚠️ Ingresa una nota válida entre 0 y 100");
-            return;
-          }
+    // Validación 0-5
+    if (isNaN(nuevaNota) || nuevaNota < 0 || nuevaNota > 5) {
+      alert("⚠️ Ingresa una nota válida entre 0 y 5");
+      return;
+    }
 
-          fetch(`http://localhost:8080/api/entregas/calificar/${entregaId}?calificacion=${nuevaNota}`, {
-            method: "PUT"
-          })
-            .then(res => {
-              if (res.ok) {
-                alert("✅ Calificación actualizada correctamente");
-                inputNota.style.border = "2px solid #22c55e";
-                setTimeout(() => inputNota.style.border = "1px solid #d1d5db", 1500);
-              } else {
-                alert(`❌ Error al actualizar (HTTP ${res.status})`);
-              }
-            })
-            .catch(err => {
-              console.error(err);
-              alert("⚠️ Error de conexión al guardar calificación");
-            });
-        });
-      });
+    fetch(`http://localhost:8080/api/entregas/calificar/${entregaId}?calificacion=${nuevaNota}`, {
+      method: "PUT"
+    })
+    .then(async res => {
+      const text = await res.text(); // Tomamos mensaje del backend
+      if (res.ok) {
+        alert("✅ Calificación actualizada correctamente");
+        inputNota.style.border = "2px solid #22c55e";
+        setTimeout(() => inputNota.style.border = "1px solid #d1d5db", 1500);
+      } else {
+        alert(`❌ Error al actualizar (HTTP ${res.status}): ${text}`);
+      }
+    })
+    .catch(err => {
+      console.error("❌ Error al guardar calificación:", err);
+      alert("⚠️ Error de conexión al guardar calificación");
+    });
+  });
+});
 
       // --- Ver PDF ---
       detalleDiv.querySelectorAll(".btn-verpdf").forEach(btn => {
@@ -969,16 +977,13 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
       });
     })
     .catch(err => {
-      console.error("Error al cargar entregas:", err);
+      console.error("❌ Error al cargar entregas:", err);
       detalleDiv.innerHTML = `
         <h2 style="font-size:1.8rem; color:#1e40af;">📘 ${nombreCurso}</h2>
-        <p style="color:red;">❌ Error al cargar calificaciones.</p>
+        <p style="color:red;">❌ Error al cargar calificaciones.<br>${err.message}</p>
       `;
     });
-}
-
-
-// ====================== 🔹 MODAL DE VISUALIZACIÓN DE PDF ======================
+    // ====================== 🔹 MODAL DE VISUALIZACIÓN DE PDF ======================
 function verPDFenModal(idEntrega, nombreTarea) {
   const url = `http://localhost:8080/api/entregas/descargar/${idEntrega}`;
 
@@ -1024,6 +1029,9 @@ function verPDFenModal(idEntrega, nombreTarea) {
   // Descargar en nueva pestaña
   document.getElementById("descargarPDFBtn").onclick = () => window.open(url, "_blank");
 }
+
+}
+
 
 
 function mostrarNotificacion(mensaje, tipo = "exito") {

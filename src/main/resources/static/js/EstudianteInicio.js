@@ -45,14 +45,21 @@ document.getElementById("btn-cursos").addEventListener("click", () => {
 });
 
  
-// Escucha el botón de mensajes (en la topbar del estudiante)
+
 document.getElementById("btn-mensajes").addEventListener("click", async () => {
-  if (!usuarioId) {
-    alert("⚠️ No se pudo obtener el ID del usuario. Intenta cargar tu perfil primero.");
+  // 🔹 Espera hasta que usuarioId esté definido
+  if (!window.usuarioId) {
+    alert("⚠️ No se pudo obtener el ID del usuario. Cargando perfil primero...");
+    await cargarPerfil(); // Llama a cargarPerfil si no se ha cargado aún
+  }
+
+  if (!window.usuarioId) {
+    alert("⚠️ Aún no se pudo obtener el ID del usuario.");
     return;
   }
+
   mostrarModalMensajesEstudiante();
-  await cargarMensajesRecibidosEstudiante(usuarioId);
+  await cargarMensajesRecibidosEstudiante(window.usuarioId);
 });
 
 // Mostrar modal con los mensajes recibidos
@@ -159,6 +166,7 @@ async function cargarMensajesRecibidosEstudiante(idUsuario) {
 
 
 
+
   function cargarCalendario() {
     mainContent.innerHTML = `
       <h1 class="bienvenida">Bienvenido Estudiante 👋</h1>
@@ -235,14 +243,13 @@ window.usuarioId = null; // variable global
 // ------------------ Cargar tareas ------------------
 async function cargarTareas() {
   const mainContent = document.getElementById("main-content");
-  const idUsuario = window.usuarioId; // usamos la variable global
+  const idUsuario = window.usuarioId;
 
   if (!idUsuario) {
     mainContent.innerHTML = `
       <div style="text-align:center; padding:40px;">
         <h2 style="color:#dc2626;">⚠️ Error</h2>
-        <p style="color:#666; margin:20px 0;">No se pudo identificar al usuario.</p>
-        <p style="color:#666;">Por favor, carga tu perfil primero.</p>
+        <p style="color:#666;">No se pudo identificar al usuario.</p>
         <button onclick="cargarPerfil()" style="
           padding:12px 24px; background:#2563eb; color:white; 
           border:none; border-radius:6px; cursor:pointer; margin-top:20px;">
@@ -253,24 +260,24 @@ async function cargarTareas() {
     return;
   }
 
-  console.log("✅ Cargando tareas para usuario ID:", idUsuario);
-
   mainContent.innerHTML = `
-    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">📘 Tareas</h1>
-    <div id="tareasContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>
+    <h1 style="text-align:center; color:#1e3a8a;">📘 Tareas</h1>
+    <div id="tareasContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:40px;"></div>
 
-    <!-- Modal -->
+    <h2 style="text-align:center; color:#1e40af; margin-top:30px;">📂 Mis Entregas</h2>
+    <div id="entregasContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-top:20px;"></div>
+
+    <!-- Modal para subir tarea -->
     <div id="modalTarea" style="
-        display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-        background: rgba(0,0,0,0.5); justify-content:center; align-items:center;
-        z-index:1000;">
+        display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;">
       <div style="
           background:white; border-radius:12px; padding:25px; width:600px; max-width:95%;
           box-shadow:0 12px 30px rgba(0,0,0,0.4); position:relative;">
         <span id="cerrarModal" style="
             position:absolute; top:10px; right:15px; cursor:pointer; font-size:22px; color:#666;">&times;</span>
         <div id="infoActividad" style="margin-bottom:20px;"></div>
-        <h2 style="color:#1e3a8a; margin-bottom:15px;">📤 Subir Tarea</h2>
+        <h2 style="color:#1e3a8a;">📤 Subir Tarea</h2>
         <input type="text" id="nombreTareaModal" placeholder="Nombre de la tarea" style="padding:10px; margin-bottom:10px; width:100%; border-radius:6px; border:1px solid #ccc;">
         <input type="file" id="archivoTareaModal" accept=".pdf" style="margin-bottom:15px; width:100%;">
         <button id="btnSubirModal" style="padding:12px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; width:100%; font-weight:bold;">Subir Tarea</button>
@@ -279,71 +286,70 @@ async function cargarTareas() {
     </div>
   `;
 
+  await cargarListaTareas(idUsuario);
+  await cargarEntregas(idUsuario);
+}
+
+// ------------------ Cargar lista de tareas ------------------
+async function cargarListaTareas(idUsuario) {
+  const container = document.getElementById("tareasContainer");
+
   try {
     const response = await fetch("http://localhost:8080/api/tareas");
-    if (!response.ok) throw new Error("Error en la respuesta del servidor");
+    if (!response.ok) throw new Error("Error al obtener tareas");
     const data = await response.json();
-    console.log("📋 Tareas recibidas:", data);
-
-    const container = document.getElementById("tareasContainer");
-    container.innerHTML = "";
 
     if (data.length === 0) {
       container.innerHTML = `<p style="grid-column:1/-1; text-align:center;">⚠️ No hay tareas registradas</p>`;
       return;
     }
 
+    container.innerHTML = "";
     data.forEach(t => {
       const fecha = new Date(t.fechaLimite).toLocaleString("es-CO", {
-        day: "2-digit", month: "2-digit", year: "numeric", 
+        day: "2-digit", month: "2-digit", year: "numeric",
         hour: "2-digit", minute: "2-digit"
       });
 
       const card = document.createElement("div");
-      card.style.cssText = "background:white; border-radius:12px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.1); transition:transform .2s;";
+      card.style.cssText = "background:white; border-radius:12px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.1);";
       card.innerHTML = `
-        <h2 style="color:#1e3a8a; font-size:18px; margin:0 0 10px;">${t.nombreActividad}</h2>
-        <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Curso:</strong> ${t.curso?.nombre || 'Sin curso'}</p>
-        <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Fecha límite:</strong> ${fecha}</p>
-        <p style="font-size:14px; color:#333; margin:10px 0;">${t.descripcion}</p>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="btnVerMas" style="padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">Ver/Entregar</button>
-        </div>
+        <h2 style="color:#1e3a8a; font-size:18px;">${t.nombreActividad}</h2>
+        <p style="font-size:14px;"><strong>Curso:</strong> ${t.curso?.nombre || 'Sin curso'}</p>
+        <p style="font-size:14px;"><strong>Fecha límite:</strong> ${fecha}</p>
+        <p style="font-size:14px;">${t.descripcion}</p>
+        <button class="btnVerMas" style="
+          padding:8px 12px; background:#3b82f6; color:white; border:none; 
+          border-radius:6px; cursor:pointer; margin-top:10px;">Ver/Entregar</button>
       `;
       container.appendChild(card);
 
-      card.addEventListener("mouseenter", () => card.style.transform = "scale(1.03)");
-      card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
-
-      const btnVerMas = card.querySelector(".btnVerMas");
-      btnVerMas.addEventListener("click", () => abrirModalTarea(t, fecha, idUsuario));
+      card.querySelector(".btnVerMas").addEventListener("click", () => abrirModalTarea(t, fecha, idUsuario));
     });
+
   } catch (err) {
     console.error("❌ Error al cargar tareas:", err);
-    document.getElementById("tareasContainer").innerHTML = `
-      <p style="grid-column:1/-1; text-align:center; color:red;">❌ Error al cargar tareas: ${err.message}</p>
-    `;
+    container.innerHTML = `<p style="color:red; text-align:center;">❌ ${err.message}</p>`;
   }
 }
 
-// ------------------ Modal y subida ------------------
+// ------------------ Modal de subida ------------------
 function abrirModalTarea(tarea, fecha, idUsuario) {
   const modal = document.getElementById("modalTarea");
   modal.style.display = "flex";
 
   const infoModal = document.getElementById("infoActividad");
   infoModal.innerHTML = `
-    <h3 style="color:#1e3a8a; margin-bottom:8px;">${tarea.nombreActividad}</h3>
-    <p style="font-size:14px; color:#555; margin:3px 0;"><strong>Curso:</strong> ${tarea.curso?.nombre || 'Sin curso'}</p>
-    <p style="font-size:14px; color:#555; margin:3px 0;"><strong>Descripción:</strong> ${tarea.descripcion}</p>
-    <p style="font-size:13px; color:#888; margin:3px 0;"><strong>Fecha límite:</strong> ${fecha}</p>
+    <h3 style="color:#1e3a8a;">${tarea.nombreActividad}</h3>
+    <p><strong>Curso:</strong> ${tarea.curso?.nombre || 'Sin curso'}</p>
+    <p><strong>Descripción:</strong> ${tarea.descripcion}</p>
+    <p><strong>Fecha límite:</strong> ${fecha}</p>
   `;
 
   document.getElementById("cerrarModal").onclick = () => {
     modal.style.display = "none";
     document.getElementById("nombreTareaModal").value = "";
     document.getElementById("archivoTareaModal").value = "";
-    document.getElementById("mensajeEstado").textContent = "";
   };
 
   const btnSubir = document.getElementById("btnSubirModal");
@@ -366,9 +372,8 @@ function abrirModalTarea(tarea, fecha, idUsuario) {
 
     const idCurso = tarea.curso?.idCurso;
     if (!idCurso) {
-      mensajeEstado.textContent = "❌ Esta tarea no tiene un curso asociado";
+      mensajeEstado.textContent = "❌ Esta tarea no tiene curso asociado";
       mensajeEstado.style.color = "red";
-      console.error("❌ Tarea sin curso:", tarea);
       return;
     }
 
@@ -379,29 +384,21 @@ function abrirModalTarea(tarea, fecha, idUsuario) {
     const formData = new FormData();
     formData.append("nombreTarea", nombre);
     formData.append("archivo", archivo);
-    formData.append("idUsuario", idUsuario); // ✅ siempre definido
+    formData.append("idUsuario", idUsuario);
 
     try {
       const resp = await fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/subir`, {
         method: "POST",
         body: formData
       });
-      if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(text || "Error al subir tarea");
-      }
-      const mensaje = await resp.text();
-      mensajeEstado.textContent = "✅ " + mensaje;
+      if (!resp.ok) throw new Error(await resp.text());
+      mensajeEstado.textContent = "✅ Tarea subida correctamente";
       mensajeEstado.style.color = "#10b981";
       setTimeout(() => {
         modal.style.display = "none";
-        document.getElementById("nombreTareaModal").value = "";
-        document.getElementById("archivoTareaModal").value = "";
-        mensajeEstado.textContent = "";
-        cargarTareas();
-      }, 2000);
+        cargarEntregas(idUsuario);
+      }, 1500);
     } catch (err) {
-      console.error("❌ Error al subir:", err);
       mensajeEstado.textContent = "❌ " + err.message;
       mensajeEstado.style.color = "red";
     } finally {
@@ -409,6 +406,117 @@ function abrirModalTarea(tarea, fecha, idUsuario) {
     }
   };
 }
+
+// ------------------ Cargar entregas del usuario ------------------
+async function cargarEntregas(idUsuario) {
+  const cont = document.getElementById("entregasContainer");
+  cont.innerHTML = "⏳ Cargando entregas...";
+
+  try {
+    const resp = await fetch(`http://localhost:8080/api/entregas/usuario/${idUsuario}`);
+    if (!resp.ok) throw new Error("Error al obtener entregas");
+    const entregas = await resp.json();
+
+    if (!entregas.length) {
+      cont.innerHTML = `<p style="grid-column:1/-1; text-align:center;">⚠️ No tienes entregas registradas</p>`;
+      return;
+    }
+
+    // --- Crear tabla ---
+    let tablaHTML = `
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; background:white; box-shadow:0 3px 10px rgba(0,0,0,0.1); border-radius:10px;">
+          <thead style="background:#1e3a8a; color:white;">
+            <tr>
+              <th style="padding:12px; text-align:left;">📄 Nombre Tarea</th>
+              <th style="padding:12px; text-align:left;">📅 Fecha de Entrega</th>
+              <th style="padding:12px; text-align:left;">⭐ Calificación</th>
+              <th style="padding:12px; text-align:center;">⚙️ Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    entregas.forEach(e => {
+      const fecha = new Date(e.fechaEntrega).toLocaleString("es-CO");
+      tablaHTML += `
+        <tr style="border-bottom:1px solid #ddd;">
+          <td style="padding:10px;">${e.nombreTarea}</td>
+          <td style="padding:10px;">${fecha}</td>
+          <td style="padding:10px;">${e.calificacion ?? 'Sin calificar'}</td>
+          <td style="padding:10px; text-align:center;">
+            <button onclick="verPDF(${e.idEntrega})" style="background:#2563eb; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Ver PDF</button>
+            <button onclick="editarEntrega(${e.idEntrega})" style="background:#facc15; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Editar</button>
+            <button onclick="eliminarEntrega(${e.idEntrega})" style="background:#dc2626; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Eliminar</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tablaHTML += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    cont.innerHTML = tablaHTML;
+
+  } catch (err) {
+    console.error("❌ Error al cargar entregas:", err);
+    cont.innerHTML = `<p style="color:red; text-align:center;">❌ ${err.message}</p>`;
+  }
+}
+
+// ------------------ Funciones globales ------------------
+
+function verPDF(idEntrega) {
+  window.open(`http://localhost:8080/api/entregas/descargar/${idEntrega}`, "_blank");
+}
+
+async function eliminarEntrega(idEntrega) {
+  if (!confirm("¿Deseas eliminar esta entrega?")) return;
+
+  try {
+    const resp = await fetch(`http://localhost:8080/api/entregas/${idEntrega}/eliminar`, {
+      method: "DELETE"
+    });
+
+    if (!resp.ok) throw new Error(await resp.text());
+    alert("✅ Entrega eliminada correctamente");
+    cargarEntregas(window.usuarioId);
+
+  } catch (err) {
+    alert("❌ Error al eliminar: " + err.message);
+  }
+}
+
+async function editarEntrega(idEntrega) {
+  const nuevoNombre = prompt("Nuevo nombre para la entrega:");
+  if (!nuevoNombre) return;
+
+  try {
+    const formData = new FormData();
+    formData.append("nombreTarea", nuevoNombre);
+
+    const resp = await fetch(`http://localhost:8080/api/entregas/${idEntrega}/editar`, {
+      method: "PUT",
+      body: formData
+    });
+
+    if (!resp.ok) throw new Error(await resp.text());
+    alert("✅ Entrega actualizada correctamente");
+    cargarEntregas(window.usuarioId);
+
+  } catch (err) {
+    alert("❌ Error al editar: " + err.message);
+  }
+}
+
+
+
+
+
+
 
 
 
@@ -645,6 +753,7 @@ async function cargarPerfil() {
 
   
 function cargarCalificaciones() {
+  const mainContent = document.getElementById("main-content");
   mainContent.innerHTML = `
     <h1 style="font-size:1.6rem; margin-bottom:15px;">📊 Promedio de Calificaciones por Curso</h1>
     <input type="text" id="buscarCurso" placeholder="Buscar curso..." 
@@ -654,23 +763,30 @@ function cargarCalificaciones() {
     <div id="detalleTareas" style="margin-top:30px;"></div>
   `;
 
-  if (!usuarioId) {
-    console.error("usuarioId no definido. Asegúrate de llamar primero a cargarPerfil()");
-    document.getElementById("listaCursos").innerHTML = `<p style="color:red;">❌ No se pudo cargar calificaciones, usuario no identificado</p>`;
+  // ✅ Usamos el ID global guardado en window
+  const idUsuario = window.usuarioId;
+
+  if (!idUsuario) {
+    console.error("⚠️ usuarioId no definido. Asegúrate de que cargarPerfil() se haya ejecutado antes.");
+    document.getElementById("listaCursos").innerHTML = `
+      <p style="color:red;">❌ No se pudo cargar calificaciones: usuario no identificado</p>`;
     return;
   }
 
-  // Endpoint filtrado por usuario
-  fetch(`http://localhost:8080/api/entregas/promedios/usuario/${usuarioId}`)
-    .then(response => response.json())
+  // 🔹 Endpoint filtrado por usuario
+  fetch(`http://localhost:8080/api/entregas/promedios/usuario/${idUsuario}`)
+    .then(response => {
+      if (!response.ok) throw new Error("Error al obtener promedios");
+      return response.json();
+    })
     .then(promedios => {
       const listaDiv = document.getElementById("listaCursos");
 
-      if (promedios.length === 0) {
+      if (!promedios || promedios.length === 0) {
         listaDiv.innerHTML = `<p>No hay calificaciones registradas.</p>`;
         return;
       }
-    
+
       let cursos = promedios;
 
       function mostrarCursos(cursosFiltrados) {
@@ -689,7 +805,7 @@ function cargarCalificaciones() {
         html += `</ul>`;
         listaDiv.innerHTML = html;
 
-        // Animación de aparición
+        // 🔸 Animación de aparición
         document.querySelectorAll("#ulCursos li").forEach((li, i) => {
           setTimeout(() => {
             li.style.opacity = 1;
@@ -697,7 +813,7 @@ function cargarCalificaciones() {
           }, i * 60);
         });
 
-        // Click dinámico para mostrar tareas
+        // 🔸 Click dinámico para mostrar tareas
         document.querySelectorAll("#ulCursos li").forEach(li => {
           li.addEventListener("click", () => {
             verTareasCurso(Number(li.dataset.id), li.dataset.nombre);
@@ -707,7 +823,7 @@ function cargarCalificaciones() {
 
       mostrarCursos(cursos);
 
-      // Filtrar cursos mientras escribes
+      // 🔍 Filtrar cursos en tiempo real
       document.getElementById("buscarCurso").addEventListener("input", e => {
         const texto = e.target.value.toLowerCase();
         const filtrados = cursos.filter(c => c.curso.toLowerCase().includes(texto));
@@ -715,8 +831,9 @@ function cargarCalificaciones() {
       });
     })
     .catch(err => {
-      console.error(err);
-      mainContent.innerHTML = `<p style="color:red;">❌ Error al cargar promedios</p>`;
+      console.error("❌ Error al cargar promedios:", err);
+      document.getElementById("listaCursos").innerHTML = `
+        <p style="color:red;">❌ Error al cargar calificaciones.<br>${err.message}</p>`;
     });
 }
 
@@ -728,10 +845,20 @@ function verTareasCurso(idCurso, nombreCurso) {
     <p>Cargando...</p>
   `;
 
-  fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/usuario/${usuarioId}`)
-    .then(response => response.json())
+  const idUsuario = window.usuarioId;
+
+  if (!idUsuario) {
+    detalleDiv.innerHTML = `<p style="color:red;">❌ Usuario no identificado</p>`;
+    return;
+  }
+
+  fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/usuario/${idUsuario}`)
+    .then(response => {
+      if (!response.ok) throw new Error("Error al obtener tareas");
+      return response.json();
+    })
     .then(tareas => {
-      if (tareas.length === 0) {
+      if (!tareas || tareas.length === 0) {
         detalleDiv.innerHTML = `
           <h2 class="titulo-curso">📘 Tareas de ${nombreCurso}</h2>
           <p>No hay tareas registradas.</p>
@@ -759,7 +886,7 @@ function verTareasCurso(idCurso, nombreCurso) {
       `;
     })
     .catch(err => {
-      console.error(err);
+      console.error("❌ Error al cargar tareas:", err);
       detalleDiv.innerHTML = `<p style="color:red;">❌ Error al cargar tareas</p>`;
     });
 }

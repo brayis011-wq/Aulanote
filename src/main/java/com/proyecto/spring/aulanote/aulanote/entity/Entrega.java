@@ -2,7 +2,6 @@ package com.proyecto.spring.aulanote.aulanote.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 import jakarta.persistence.*;
 
 @Entity
@@ -34,8 +33,13 @@ public class Entrega {
 
     // 🔹 Relación con Curso
     @ManyToOne
-    @JoinColumn(name = "curso_id", nullable = false) // esta columna debe existir en la tabla entregas
+    @JoinColumn(name = "curso_id", nullable = false)
     private Curso curso;
+
+    // 🔹 Nueva relación con Usuario (solo lectura)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario", referencedColumnName = "id", insertable = false, updatable = false)
+    private Usuario usuario;
 
     // ====== Getters y Setters ======
 
@@ -101,5 +105,13 @@ public class Entrega {
 
     public void setCurso(Curso curso) {
         this.curso = curso;
+    }
+
+    public Usuario getUsuario() {   // ✅ este es el que necesita tu DTO
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 }

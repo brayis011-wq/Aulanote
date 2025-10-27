@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.proyecto.spring.aulanote.aulanote.entity.Entrega;
+import com.proyecto.spring.aulanote.aulanote.dto.EntregaDTO;
 import com.proyecto.spring.aulanote.aulanote.entity.Curso;
 import com.proyecto.spring.aulanote.aulanote.repository.EntregaRepository;
 import com.proyecto.spring.aulanote.aulanote.repository.CursoRepository;
@@ -40,11 +41,25 @@ public class EntregaController {
         return new ResponseEntity<>(entregaService.listarEntregas(), HttpStatus.OK);
     }
 
-    // ✅ Listar tareas de un curso específico
-    @GetMapping("/curso/{idCurso}/tareas")
-    public List<Entrega> getTareasPorCurso(@PathVariable Integer idCurso) {
-        return entregaService.obtenerEntregasPorCurso(idCurso);
+// ✅ Listar tareas de un curso específico (en formato DTO)
+@GetMapping("/curso/{idCurso}/tareas")
+public ResponseEntity<?> getTareasPorCurso(@PathVariable Integer idCurso) {
+    try {
+        List<EntregaDTO> entregasDTO = entregaService.obtenerEntregasDTOPorCurso(idCurso);
+        
+        // ✅ Siempre devolver una lista (aunque esté vacía)
+        return ResponseEntity.ok(entregasDTO);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "Error al cargar calificaciones");
+        error.put("mensaje", e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
+}
+
+
 
     // ✅ Obtener promedios por usuario
     @GetMapping("/promedios/usuario/{idUsuario}")
@@ -218,12 +233,67 @@ public class EntregaController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    // ✅ Calificar entrega
-    @PutMapping("/calificar/{id}")
-    public ResponseEntity<Entrega> calificarEntrega(@PathVariable Integer id, @RequestParam BigDecimal calificacion) {
-        return entregaService.calificarEntrega(id, calificacion)
-                .map(entregaCalificada -> new ResponseEntity<>(entregaCalificada, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+// ✅ Calificar entrega (versión segura)
+@PutMapping("/calificar/{id}")
+public ResponseEntity<?> calificarEntrega(@PathVariable Integer id, @RequestParam BigDecimal calificacion) {
+    try {
+        // Validar calificación 0-5
+        if (calificacion == null) {
+            return ResponseEntity.badRequest().body("⚠️ La calificación no puede estar vacía");
+        }
+        if (calificacion.compareTo(BigDecimal.ZERO) < 0 || calificacion.compareTo(new BigDecimal(5)) > 0) {
+            return ResponseEntity.badRequest().body("⚠️ La calificación debe estar entre 0 y 5");
+        }
+
+        Optional<Entrega> entregaCalificada = entregaService.calificarEntrega(id, calificacion);
+
+        if (entregaCalificada.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("❌ Entrega no encontrada");
+        }
+
+        return ResponseEntity.ok(entregaCalificada.get());
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("❌ Error interno al calificar la entrega: " + e.getMessage());
+    }
+}
+
+
+
+    // ✅ Editar entrega (nombre y/o archivo PDF)
+    @PutMapping("/{idEntrega}/editar")
+    public ResponseEntity<String> editarEntrega(
+            @PathVariable Integer idEntrega,
+            @RequestParam("nombreTarea") String nombreTarea,
+            @RequestParam(value = "archivo", required = false) MultipartFile archivo) {
+        try {
+            String mensaje = entregaService.editarEntrega(idEntrega, nombreTarea, archivo);
+            return ResponseEntity.ok(mensaje);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Error al editar la entrega: " + e.getMessage());
+        }
     }
 
+    // ✅ Eliminar entrega físicamente (BD + archivo)
+    @DeleteMapping("/{idEntrega}/eliminar")
+    public ResponseEntity<String> eliminarEntregaFisicamente(@PathVariable Integer idEntrega) {
+        try {
+            boolean eliminado = entregaService.eliminarEntregaFisicamente(idEntrega);
+            if (eliminado) {
+                return ResponseEntity.ok("✅ Entrega eliminada correctamente");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("❌ No se encontró la entrega para eliminar");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Error al eliminar entrega: " + e.getMessage());
+        }
+    }
 }
+
