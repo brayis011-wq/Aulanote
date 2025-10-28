@@ -415,6 +415,7 @@ async function cargarEntregas(idUsuario) {
   try {
     const resp = await fetch(`http://localhost:8080/api/entregas/usuario/${idUsuario}`);
     if (!resp.ok) throw new Error("Error al obtener entregas");
+
     const entregas = await resp.json();
 
     if (!entregas.length) {
@@ -437,6 +438,7 @@ async function cargarEntregas(idUsuario) {
           <tbody>
     `;
 
+    // 🔹 Generar filas dinámicamente
     entregas.forEach(e => {
       const fecha = new Date(e.fechaEntrega).toLocaleString("es-CO");
       tablaHTML += `
@@ -445,9 +447,9 @@ async function cargarEntregas(idUsuario) {
           <td style="padding:10px;">${fecha}</td>
           <td style="padding:10px;">${e.calificacion ?? 'Sin calificar'}</td>
           <td style="padding:10px; text-align:center;">
-            <button onclick="verPDF(${e.idEntrega})" style="background:#2563eb; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Ver PDF</button>
-            <button onclick="editarEntrega(${e.idEntrega})" style="background:#facc15; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Editar</button>
-            <button onclick="eliminarEntrega(${e.idEntrega})" style="background:#dc2626; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Eliminar</button>
+            <button class="btn-ver" data-id="${e.idEntrega}" style="background:#2563eb; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Ver PDF</button>
+            <button class="btn-editar" data-id="${e.idEntrega}" style="background:#facc15; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Editar</button>
+            <button class="btn-eliminar" data-id="${e.idEntrega}" style="background:#dc2626; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">Eliminar</button>
           </td>
         </tr>
       `;
@@ -459,7 +461,21 @@ async function cargarEntregas(idUsuario) {
       </div>
     `;
 
+    // Insertar la tabla completa
     cont.innerHTML = tablaHTML;
+
+    // 🔥 Agregar eventos DESPUÉS de insertar la tabla
+    cont.querySelectorAll(".btn-ver").forEach(btn =>
+      btn.addEventListener("click", () => verPDF(btn.dataset.id))
+    );
+
+    cont.querySelectorAll(".btn-editar").forEach(btn =>
+      btn.addEventListener("click", () => editarEntrega(btn.dataset.id))
+    );
+
+    cont.querySelectorAll(".btn-eliminar").forEach(btn =>
+      btn.addEventListener("click", () => eliminarEntrega(btn.dataset.id))
+    );
 
   } catch (err) {
     console.error("❌ Error al cargar entregas:", err);
@@ -469,10 +485,12 @@ async function cargarEntregas(idUsuario) {
 
 // ------------------ Funciones globales ------------------
 
+// ✅ Ver PDF (coincide con @GetMapping("/descargar/{id}") del backend)
 function verPDF(idEntrega) {
   window.open(`http://localhost:8080/api/entregas/descargar/${idEntrega}`, "_blank");
 }
 
+// ✅ Eliminar entrega (coincide con @DeleteMapping("/{idEntrega}/eliminar"))
 async function eliminarEntrega(idEntrega) {
   if (!confirm("¿Deseas eliminar esta entrega?")) return;
 
@@ -481,8 +499,10 @@ async function eliminarEntrega(idEntrega) {
       method: "DELETE"
     });
 
-    if (!resp.ok) throw new Error(await resp.text());
-    alert("✅ Entrega eliminada correctamente");
+    const texto = await resp.text();
+    if (!resp.ok) throw new Error(texto);
+
+    alert(texto || "✅ Entrega eliminada correctamente");
     cargarEntregas(window.usuarioId);
 
   } catch (err) {
@@ -490,27 +510,49 @@ async function eliminarEntrega(idEntrega) {
   }
 }
 
+// ✅ Editar entrega (coincide con @PutMapping("/{idEntrega}/editar"))
 async function editarEntrega(idEntrega) {
   const nuevoNombre = prompt("Nuevo nombre para la entrega:");
   if (!nuevoNombre) return;
 
+  const cambiarArchivo = confirm("¿Deseas subir un nuevo archivo PDF?");
+  let nuevoArchivo = null;
+
+  if (cambiarArchivo) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/pdf";
+    input.click();
+
+    // Esperar a que el usuario elija archivo
+    nuevoArchivo = await new Promise(resolve => {
+      input.onchange = () => resolve(input.files[0]);
+      input.oncancel = () => resolve(null);
+    });
+  }
+
   try {
     const formData = new FormData();
     formData.append("nombreTarea", nuevoNombre);
+    if (nuevoArchivo) formData.append("archivo", nuevoArchivo);
 
     const resp = await fetch(`http://localhost:8080/api/entregas/${idEntrega}/editar`, {
       method: "PUT",
       body: formData
     });
 
-    if (!resp.ok) throw new Error(await resp.text());
-    alert("✅ Entrega actualizada correctamente");
+    const texto = await resp.text();
+    if (!resp.ok) throw new Error(texto);
+
+    alert(texto || "✅ Entrega actualizada correctamente");
     cargarEntregas(window.usuarioId);
 
   } catch (err) {
     alert("❌ Error al editar: " + err.message);
   }
 }
+
+
 
 
 

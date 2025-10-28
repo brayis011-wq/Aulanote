@@ -295,5 +295,17 @@ public ResponseEntity<?> calificarEntrega(@PathVariable Integer id, @RequestPara
                     .body("❌ Error al eliminar entrega: " + e.getMessage());
         }
     }
+    // ✅ Listar entregas por usuario
+@GetMapping("/usuario/{idUsuario}")
+public ResponseEntity<List<EntregaDTO>> listarPorUsuario(@PathVariable Integer idUsuario) {
+    try {
+        List<EntregaDTO> entregas = entregaService.listarPorUsuario(idUsuario);
+        return ResponseEntity.ok(entregas);
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    }
+}
+
 }
 
