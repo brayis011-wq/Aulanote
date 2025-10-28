@@ -62,7 +62,7 @@ document.getElementById("btn-mensajes").addEventListener("click", async () => {
   await cargarMensajesRecibidosEstudiante(window.usuarioId);
 });
 
-// Mostrar modal con los mensajes recibidos
+
 function mostrarModalMensajesEstudiante() {
   let modal = document.getElementById("modalMensajesEstudiante");
   if (!modal) {
@@ -130,8 +130,6 @@ function mostrarModalMensajesEstudiante() {
     modal.style.display = "none";
   };
 }
-
-// Cargar los mensajes recibidos desde el backend
 async function cargarMensajesRecibidosEstudiante(idUsuario) {
   const lista = document.getElementById("listaMensajesEstudiante");
   lista.innerHTML = "<p>Cargando mensajes...</p>";
@@ -165,8 +163,6 @@ async function cargarMensajesRecibidosEstudiante(idUsuario) {
 }
 
 
-
-
   function cargarCalendario() {
     mainContent.innerHTML = `
       <h1 class="bienvenida">Bienvenido Estudiante 👋</h1>
@@ -188,59 +184,164 @@ async function cargarMensajesRecibidosEstudiante(idUsuario) {
       ]
     });
     calendar.render();
-  }
+}
 
   
 function cargarProfesores() {
   mainContent.innerHTML = `
-    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;"> Profesores</h1>
-    <div id="profesoresContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px;"></div>
+    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">Profesores</h1>
+    <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+      <input type="text" id="inputBuscarProfesor" placeholder="Buscar por nombre o apellido..." 
+        style="width:100%; max-width:400px; padding:10px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="tablaProfesores" class="tabla-tareas">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Email</th>
+            <th>Cargo</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="profesoresContainer"></tbody>
+      </table>
+    </div>
   `;
 
   fetch("http://localhost:8080/api/usuario")
     .then(r => r.json())
     .then(data => {
       const container = document.getElementById("profesoresContainer");
-      container.innerHTML = "";
+      let profesores = data.filter(u => u.cargo.toLowerCase() === "profesor");
 
-      const profesores = data.filter(u => u.cargo.toLowerCase() === "profesor");
+      function mostrarProfesores(lista) {
+        container.innerHTML = "";
+        if (lista.length === 0) {
+          container.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:10px;">⚠️ No hay profesores que coincidan</td></tr>`;
+          return;
+        }
 
-      if (profesores.length === 0) {
-        container.innerHTML = `<p style="grid-column:1/-1; text-align:center;">⚠️ No hay profesores registrados</p>`;
-        return;
+        lista.forEach(u => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${u.nombre}</td>
+            <td>${u.apellido}</td>
+            <td>${u.email}</td>
+            <td>${u.cargo}</td>
+            <td>
+              <button class="btn-accion enviar" data-id="${u.id}" data-nombre="${u.nombre} ${u.apellido}">✉️ Enviar</button>
+            </td>
+          `;
+          container.appendChild(row);
+        });
+
+        document.querySelectorAll(".btn-accion.enviar").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const idDestinatario = btn.dataset.id;
+            const nombreDestinatario = btn.dataset.nombre;
+            mostrarModalEnviarMensaje(idDestinatario, nombreDestinatario);
+          });
+        });
       }
 
-      profesores.forEach(u => {
-        container.innerHTML += `
-          <div style="background:white; border-radius:12px; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align:center; transition:transform .2s;">
-            <img src="icons/profile-1335-svgrepo-com.svg" alt="Avatar" style="width:80px; height:80px; border-radius:50%; margin-bottom:10px;">
-            <h2 style="color:#1e3a8a; font-size:18px; margin:5px 0;">${u.nombre} ${u.apellido}</h2>
-            <p style="font-size:14px; color:#555; margin:5px 0;"><strong>Email:</strong> ${u.email}</p>
-            <p style="font-size:13px; color:#888; margin:5px 0;">${u.cargo}</p>
-            <button style="margin-top:10px; padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">
-              Ver perfil
-            </button>
-          </div>
-        `;
+      mostrarProfesores(profesores);
+
+      // Filtrar profesores en tiempo real
+      document.getElementById("inputBuscarProfesor").addEventListener("input", e => {
+        const texto = e.target.value.toLowerCase();
+        const filtrados = profesores.filter(u =>
+          u.nombre.toLowerCase().includes(texto) || u.apellido.toLowerCase().includes(texto)
+        );
+        mostrarProfesores(filtrados);
       });
 
-      // Animación hover
-      document.querySelectorAll("#profesoresContainer > div").forEach(card => {
-        card.addEventListener("mouseenter", () => card.style.transform = "scale(1.05)");
-        card.addEventListener("mouseleave", () => card.style.transform = "scale(1)");
-      });
     })
     .catch(err => {
       console.error(err);
-      document.getElementById("profesoresContainer").innerHTML = `
-        <p style="grid-column:1/-1; text-align:center; color:red;">❌ Error al cargar profesores</p>
-      `;
+      const container = document.getElementById("profesoresContainer");
+      container.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:10px; color:red;">❌ Error al cargar profesores</td></tr>`;
     });
-}
-// Variable global
-window.usuarioId = null; // variable global
 
-// ------------------ Cargar tareas ------------------
+  // Modal de enviar mensaje
+  function mostrarModalEnviarMensaje(idDestinatario, nombreDestinatario) {
+    let modal = document.getElementById("modalEnviarMensaje");
+    if (modal) modal.remove();
+
+    modal = document.createElement("div");
+    modal.id = "modalEnviarMensaje";
+    modal.innerHTML = `
+      <div class="overlay"></div>
+      <div class="modal">
+        <h3>Enviar mensaje a ${nombreDestinatario}</h3>
+        <textarea id="mensajeTexto" placeholder="Escribe tu mensaje aquí..." rows="4"
+          style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:8px;"></textarea>
+        <div style="margin-top:10px; text-align:right;">
+          <button id="cancelarMensaje" class="btn-cancelar">Cancelar</button>
+          <button id="enviarMensaje" class="btn-primary">Enviar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const style = document.createElement("style");
+    style.innerHTML = `
+      #modalEnviarMensaje {
+        position: fixed; top:0; left:0; width:100%; height:100%;
+        display:flex; align-items:center; justify-content:center; z-index:9999;
+      }
+      #modalEnviarMensaje .overlay {
+        position:absolute; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.5);
+      }
+      #modalEnviarMensaje .modal {
+        position:relative; background:white; padding:20px;
+        border-radius:12px; width:400px; max-width:90%; z-index:10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+    `;
+    document.head.appendChild(style);
+
+    document.getElementById("cancelarMensaje").onclick = () => modal.remove();
+    document.getElementById("enviarMensaje").onclick = async () => {
+      const texto = document.getElementById("mensajeTexto").value.trim();
+      if (texto === "") {
+        alert("⚠️ Escribe un mensaje antes de enviarlo");
+        return;
+      }
+
+      const idRemitente = localStorage.getItem("idUsuario") || 1; // estudiante que envía
+
+      const mensaje = {
+        remitente: { id: idRemitente },
+        destinatario: { id: idDestinatario },
+        mensaje: texto
+      };
+
+      try {
+        const res = await fetch("http://localhost:8080/api/mensajes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mensaje)
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        alert("✅ Mensaje enviado con éxito a " + nombreDestinatario);
+        modal.remove();
+      } catch (error) {
+        console.error("Error al enviar mensaje:", error);
+        alert("❌ No se pudo enviar el mensaje. Revisa la consola para más detalles.");
+      }
+    };
+  }
+}
+
+
+
+
+window.usuarioId = null; // variable global
 async function cargarTareas() {
   const mainContent = document.getElementById("main-content");
   const idUsuario = window.usuarioId;
@@ -289,9 +390,8 @@ async function cargarTareas() {
   await cargarListaTareas(idUsuario);
   await cargarEntregas(idUsuario);
 }
-
-// ------------------ Cargar lista de tareas ------------------
 async function cargarListaTareas(idUsuario) {
+  await inicializarUsuario();
   const container = document.getElementById("tareasContainer");
 
   try {
@@ -332,11 +432,6 @@ async function cargarListaTareas(idUsuario) {
     container.innerHTML = `<p style="color:red; text-align:center;">❌ ${err.message}</p>`;
   }
 }
-
-// ------------------ Modal de subida ------------------
-// ========================================
-// MODAL DE SUBIDA - VERSIÓN CORREGIDA
-// ========================================
 function abrirModalTarea(tarea, fecha, idUsuario) {
   const modal = document.getElementById("modalTarea");
   modal.style.display = "flex";
@@ -353,158 +448,62 @@ function abrirModalTarea(tarea, fecha, idUsuario) {
     modal.style.display = "none";
     document.getElementById("nombreTareaModal").value = "";
     document.getElementById("archivoTareaModal").value = "";
-    document.getElementById("mensajeEstado").textContent = "";
   };
 
   const btnSubir = document.getElementById("btnSubirModal");
-  
-  // ✅ Remover eventos anteriores clonando el botón
-  const nuevoBtn = btnSubir.cloneNode(true);
-  btnSubir.parentNode.replaceChild(nuevoBtn, btnSubir);
-  
-  nuevoBtn.onclick = async () => {
+  btnSubir.onclick = async () => {
     const nombre = document.getElementById("nombreTareaModal").value.trim();
     const archivo = document.getElementById("archivoTareaModal").files[0];
     const mensajeEstado = document.getElementById("mensajeEstado");
 
-    console.log("🔍 DEBUG Subir tarea:", {
-      nombreActividad: tarea.nombreActividad,
-      idTarea: tarea.idTarea,
-      idCurso: tarea.curso?.idCurso,
-      idUsuario: idUsuario,
-      archivo: archivo?.name
-    });
-
-    // Validaciones
     if (!nombre || !archivo) {
       mensajeEstado.textContent = "❌ Completa el nombre y selecciona un archivo PDF";
       mensajeEstado.style.color = "red";
-      if (typeof mostrarNotificacion === 'function') {
-        mostrarNotificacion("❌ Completa todos los campos", "error");
-      }
       return;
     }
 
     if (archivo.type !== "application/pdf") {
       mensajeEstado.textContent = "❌ Solo se permiten archivos PDF";
       mensajeEstado.style.color = "red";
-      if (typeof mostrarNotificacion === 'function') {
-        mostrarNotificacion("❌ Solo archivos PDF", "error");
-      }
-      return;
-    }
-
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (archivo.size > maxSize) {
-      mensajeEstado.textContent = "❌ El archivo es muy grande (máx. 10MB)";
-      mensajeEstado.style.color = "red";
-      if (typeof mostrarNotificacion === 'function') {
-        mostrarNotificacion("❌ Archivo muy grande", "error");
-      }
       return;
     }
 
     const idCurso = tarea.curso?.idCurso;
     if (!idCurso) {
-      console.error("❌ No hay idCurso en el objeto tarea");
       mensajeEstado.textContent = "❌ Esta tarea no tiene curso asociado";
       mensajeEstado.style.color = "red";
-      if (typeof mostrarNotificacion === 'function') {
-        mostrarNotificacion("❌ Sin curso asociado", "error");
-      }
-      return;
-    }
-
-    // ✅ Validar que exista idTarea
-    const idTarea = tarea.idTarea;
-    if (!idTarea) {
-      console.error("❌ No hay idTarea en el objeto tarea");
-      mensajeEstado.textContent = "❌ Esta tarea no tiene ID válido";
-      mensajeEstado.style.color = "red";
-      if (typeof mostrarNotificacion === 'function') {
-        mostrarNotificacion("❌ ID de tarea inválido", "error");
-      }
       return;
     }
 
     mensajeEstado.textContent = "⏳ Subiendo archivo...";
     mensajeEstado.style.color = "#2563eb";
-    nuevoBtn.disabled = true;
+    btnSubir.disabled = true;
 
     const formData = new FormData();
     formData.append("nombreTarea", nombre);
     formData.append("archivo", archivo);
     formData.append("idUsuario", idUsuario);
-    formData.append("idTarea", idTarea); // ✅ AGREGAR EL ID DE LA TAREA
-
-    const url = `http://localhost:8080/api/entregas/curso/${idCurso}/subir`;
-    console.log("📤 URL del endpoint:", url);
-    console.log("📤 Datos a enviar:");
-    console.log("  - nombreTarea:", nombre);
-    console.log("  - archivo:", archivo.name);
-    console.log("  - idUsuario:", idUsuario);
-    console.log("  - idTarea:", idTarea); // ✅ LOG DEL ID TAREA
-    console.log("  - idCurso:", idCurso);
 
     try {
-      const resp = await fetch(url, {
+      const resp = await fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/subir`, {
         method: "POST",
         body: formData
       });
-
-      console.log("📥 Status:", resp.status);
-
-      // Leer respuesta
-      const contentType = resp.headers.get("content-type");
-      let errorData;
-      
-      if (contentType && contentType.includes("application/json")) {
-        errorData = await resp.json();
-      } else {
-        errorData = await resp.text();
-      }
-
-      if (!resp.ok) {
-        const errorMsg = typeof errorData === 'string' ? errorData : (errorData.message || errorData.error || `Error ${resp.status}`);
-        console.error("❌ Error del servidor:", errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      console.log("✅ Tarea subida exitosamente");
-      
+      if (!resp.ok) throw new Error(await resp.text());
       mensajeEstado.textContent = "✅ Tarea subida correctamente";
       mensajeEstado.style.color = "#10b981";
-      if (typeof mostrarNotificacion === 'function') {
-        mostrarNotificacion("✅ Tarea subida con éxito", "exito");
-      }
-
       setTimeout(() => {
         modal.style.display = "none";
-        document.getElementById("nombreTareaModal").value = "";
-        document.getElementById("archivoTareaModal").value = "";
-        document.getElementById("mensajeEstado").textContent = "";
         cargarEntregas(idUsuario);
       }, 1500);
-
     } catch (err) {
-      console.error("❌ Error completo:", err);
-      
-      let mensajeError = err.message || "Error desconocido";
-      
-      mensajeEstado.textContent = "❌ " + mensajeError;
+      mensajeEstado.textContent = "❌ " + err.message;
       mensajeEstado.style.color = "red";
-      
-      if (typeof mostrarNotificacion === 'function') {
-        mostrarNotificacion("❌ Error: " + mensajeError, "error");
-      }
-      
     } finally {
-      nuevoBtn.disabled = false;
+      btnSubir.disabled = false;
     }
   };
 }
-
-// ------------------ Cargar entregas del usuario ------------------
 async function cargarEntregas(idUsuario) {
   const cont = document.getElementById("entregasContainer");
   cont.innerHTML = "⏳ Cargando entregas...";
@@ -579,15 +578,9 @@ async function cargarEntregas(idUsuario) {
     cont.innerHTML = `<p style="color:red; text-align:center;">❌ ${err.message}</p>`;
   }
 }
-
-// ------------------ Funciones globales ------------------
-
-// ✅ Ver PDF (coincide con @GetMapping("/descargar/{id}") del backend)
 function verPDF(idEntrega) {
   window.open(`http://localhost:8080/api/entregas/descargar/${idEntrega}`, "_blank");
 }
-
-// ✅ Eliminar entrega (coincide con @DeleteMapping("/{idEntrega}/eliminar"))
 async function eliminarEntrega(idEntrega) {
   if (!confirm("¿Deseas eliminar esta entrega?")) return;
 
@@ -606,8 +599,6 @@ async function eliminarEntrega(idEntrega) {
     alert("❌ Error al eliminar: " + err.message);
   }
 }
-
-// ✅ Editar entrega (coincide con @PutMapping("/{idEntrega}/editar"))
 async function editarEntrega(idEntrega) {
   const nuevoNombre = prompt("Nuevo nombre para la entrega:");
   if (!nuevoNombre) return;
@@ -650,239 +641,542 @@ async function editarEntrega(idEntrega) {
 }
 
 
+let usuarioId = null; // Mantener para compatibilidad
 
 
-
-
-
-
-
-
-
-
-
-function cargarForos() {
-    mainContent.innerHTML = `
-        <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">Foros</h1>
-        <div id="listaForos"></div>
-    `;
-
-    const contenedor = document.getElementById("listaForos");
-    contenedor.innerHTML = "<p>Cargando foros...</p>";
-
-    fetch("http://localhost:8080/api/foros")
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            return response.json();
-        })
-        .then(foros => {
-            contenedor.innerHTML = "";
-
-            if (!foros || foros.length === 0) {
-                contenedor.innerHTML = "<p>No hay foros creados todavía.</p>";
-                return;
-            }
-
-            foros.forEach(foro => {
-                const id = foro.id;
-                const titulo = foro.titulo || "Sin título";
-                const descripcion = foro.descripcion || "Sin descripción";
-                const fecha = foro.fechaCreacion ? new Date(foro.fechaCreacion).toLocaleString() : "Sin fecha";
-
-                // Tarjeta de foro
-                const divForo = document.createElement("div");
-                divForo.classList.add("foro-card");
-                divForo.style.cssText = `
-                    border:1px solid #ccc; padding:15px; margin-bottom:15px; 
-                    border-radius:10px; background:#fff;
-                `;
-                divForo.innerHTML = `
-                    <h3>${titulo}</h3>
-                    <p>${descripcion}</p>
-                    <small>Creado el: ${fecha}</small>
-                    <br><br>
-                    <button class="btn-toggle-comentarios" style="
-                        padding:6px 10px; background:#3b82f6; color:white; border:none; border-radius:5px;
-                        cursor:pointer; margin-bottom:10px;">Mostrar comentarios</button>
-                    <div class="comentarios-container" style="margin-top:10px; display:none;"></div>
-                    <div class="form-comentar" style="margin-top:10px; display:none;">
-                        <input type="text" class="input-comentario" placeholder="Escribe tu comentario..." style="width:80%; padding:6px; border-radius:5px; border:1px solid #ccc;">
-                        <button class="btn-enviar-comentario" style="padding:6px 10px; background:#16a34a; color:white; border:none; border-radius:5px; cursor:pointer;">Comentar</button>
-                    </div>
-                `;
-
-                const btnToggle = divForo.querySelector(".btn-toggle-comentarios");
-                const comentariosContainer = divForo.querySelector(".comentarios-container");
-                const formComentar = divForo.querySelector(".form-comentar");
-                const inputComentario = divForo.querySelector(".input-comentario");
-                const btnEnviar = divForo.querySelector(".btn-enviar-comentario");
-
-                // Alternar mostrar comentarios + formulario
-                btnToggle.addEventListener("click", () => {
-                    if (comentariosContainer.style.display === "none") {
-                        comentariosContainer.style.display = "block";
-                        formComentar.style.display = "flex";
-                        comentariosContainer.innerHTML = "<p>Cargando comentarios...</p>";
-
-                        cargarComentarios(id, comentariosContainer);
-                        btnToggle.textContent = "Ocultar comentarios";
-                    } else {
-                        comentariosContainer.style.display = "none";
-                        formComentar.style.display = "none";
-                        btnToggle.textContent = "Mostrar comentarios";
-                    }
-                });
-
-                // Enviar comentario
-                btnEnviar.addEventListener("click", () => {
-                    const contenido = inputComentario.value.trim();
-                    if (!contenido) return alert("Escribe un comentario");
-
-                    const nuevoComentario = {
-                        contenido: contenido,
-                        foro: { id: id },
-                        usuario: { id: usuarioId }
-                    };
-
-                    fetch(`http://localhost:8080/api/comentarios/foro/${id}/usuario/${usuarioId}`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                       body: JSON.stringify(contenido) // solo el texto
-                      })
-                    .then(resp => {
-                        if (!resp.ok) throw new Error("Error al enviar comentario");
-                        inputComentario.value = "";
-                        cargarComentarios(id, comentariosContainer);
-                    })
-                    .catch(err => alert(err.message));
-                });
-
-                contenedor.appendChild(divForo);
-            });
-        })
-        .catch(error => {
-            console.error("❌ Error al cargar foros:", error);
-            contenedor.innerHTML = "<p style='color:red;'>Error al cargar los foros. Revisa la consola.</p>";
-        });
-}
-
-
-function cargarComentarios(foroId, contenedor) {
-    fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
-        .then(r => r.json())
-        .then(comentarios => {
-            contenedor.innerHTML = "";
-
-            if (!comentarios || comentarios.length === 0) {
-                contenedor.innerHTML = "<p>No hay comentarios aún.</p>";
-                return;
-            }
-
-            comentarios.forEach(c => {
-                const divC = document.createElement("div");
-                divC.style.borderTop = "1px solid #eee";
-                divC.style.padding = "5px 0";
-
-                const nombreUsuario = `${c.usuario?.nombre || 'Usuario'} ${c.usuario?.apellido || ''}`;
-
-                divC.innerHTML = `
-                    <strong>${nombreUsuario}:</strong>
-                    <span>${c.contenido}</span>
-                    <br>
-                    <small>${c.fechaCreacion ? new Date(c.fechaCreacion).toLocaleString() : ''}</small>
-                `;
-
-                // Botón eliminar si es comentario del usuario logueado
-                if (c.usuario?.id === usuarioId) {
-                    const btnEliminar = document.createElement("button");
-                    btnEliminar.textContent = "Eliminar";
-                    btnEliminar.style.cssText = `
-                        margin-left:10px; padding:2px 6px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer;
-                    `;
-                    btnEliminar.addEventListener("click", () => {
-                        if (!confirm("¿Deseas eliminar este comentario?")) return;
-                        fetch(`http://localhost:8080/api/comentarios/eliminar/${c.idComentario}`, { method: "DELETE" })
-                            .then(resp => {
-                                if (!resp.ok) throw new Error("Error al eliminar comentario");
-                                cargarComentarios(foroId, contenedor);
-                            })
-                            .catch(err => alert(err.message));
-                    });
-                    divC.appendChild(btnEliminar);
-                }
-
-                contenedor.appendChild(divC);
-            });
-        })
-        .catch(err => {
-            console.error(err);
-            contenedor.innerHTML = "<p style='color:red;'>Error al cargar comentarios</p>";
-        });
-}
-
-
-  
-
-
-
-let usuarioId = null; // variable global que guarda el ID del usuario
-
-async function cargarPerfil() {
-  const mainContent = document.getElementById("main-content");
-  mainContent.innerHTML = "<h1>Perfil</h1><p>Cargando...</p>";
+async function inicializarUsuario() {
+  if (window.usuarioId) {
+    console.log("✅ Usuario ya inicializado:", window.usuarioId);
+    return; 
+  }
 
   try {
+    console.log("🔄 Inicializando usuario...");
     const resp = await fetch("http://localhost:8080/api/usuario/perfil");
     if (!resp.ok) throw new Error("Error al obtener perfil");
     const usuario = await resp.json();
-
-    // Guardamos el ID globalmente
     window.usuarioId = usuario.id;
+    usuarioId = usuario.id; 
+    console.log("✅ Usuario inicializado correctamente:", window.usuarioId);
+  } catch (err) {
+    console.error("❌ Error al inicializar usuario:", err);
+    mostrarNotificacion("❌ Error al cargar usuario. Recarga la página.", "error");
+  }
+}
 
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 Página cargada, inicializando usuario...");
+  inicializarUsuario();
+});
+
+function mostrarNotificacion(mensaje, tipo = "exito") {
+  const notificacion = document.createElement("div");
+  notificacion.classList.add("notificacion", tipo);
+  notificacion.textContent = mensaje;
+
+  notificacion.style.position = "fixed";
+  notificacion.style.top = "20px";
+  notificacion.style.right = "20px";
+  notificacion.style.padding = "12px 18px";
+  notificacion.style.borderRadius = "8px";
+  notificacion.style.color = "#fff";
+  notificacion.style.fontSize = "14px";
+  notificacion.style.fontWeight = "bold";
+  notificacion.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)";
+  notificacion.style.opacity = "0";
+  notificacion.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+  notificacion.style.zIndex = "9999";
+
+  if (tipo === "exito") {
+    notificacion.style.backgroundColor = "#16a34a";
+  } else if (tipo === "error") {
+    notificacion.style.backgroundColor = "#dc2626";
+  } else {
+    notificacion.style.backgroundColor = "#3b82f6";
+  }
+
+  document.body.appendChild(notificacion);
+
+  setTimeout(() => {
+    notificacion.style.opacity = "1";
+    notificacion.style.transform = "translateY(0)";
+  }, 50);
+
+  setTimeout(() => {
+    notificacion.style.opacity = "0";
+    notificacion.style.transform = "translateY(-20px)";
+    setTimeout(() => notificacion.remove(), 300);
+  }, 3000);
+}
+
+
+
+
+async function cargarForos() {
+  // ✅ Asegurar que el usuario esté inicializado
+  await inicializarUsuario();
+
+  mainContent.innerHTML = `
+    <h1 style="text-align:center; color:#1e3a8a; margin-bottom:20px;">Foros</h1>
+    <div id="listaForos"></div>
+  `;
+
+  const contenedor = document.getElementById("listaForos");
+  contenedor.innerHTML = "<p>Cargando foros...</p>";
+
+  fetch("http://localhost:8080/api/foros")
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      return response.json();
+    })
+    .then((foros) => {
+      contenedor.innerHTML = "";
+
+      if (!foros || foros.length === 0) {
+        contenedor.innerHTML = "<p>No hay foros creados todavía.</p>";
+        return;
+      }
+
+      foros.forEach((foro) => {
+        const id = foro.id;
+        const titulo = foro.titulo || "Sin título";
+        const descripcion = foro.descripcion || "Sin descripción";
+        const fecha = foro.fechaCreacion
+          ? new Date(foro.fechaCreacion).toLocaleString()
+          : "Sin fecha";
+
+        const divForo = document.createElement("div");
+        divForo.classList.add("foro-card");
+        divForo.style.cssText = `
+          border:1px solid #ccc; padding:15px; margin-bottom:15px;
+          border-radius:10px; background:#fff;
+        `;
+
+        divForo.innerHTML = `
+          <h3>${titulo}</h3>
+          <p>${descripcion}</p>
+          <small>Creado el: ${fecha}</small>
+          <br><br>
+          <button class="btn-toggle-comentarios" style="
+            padding:6px 10px; background:#3b82f6; color:white; border:none; border-radius:5px;
+            cursor:pointer; margin-bottom:10px;">Mostrar comentarios</button>
+          <div class="comentarios-container" style="margin-top:10px; display:none;"></div>
+          <div class="form-comentar" style="margin-top:10px; display:none; gap:8px;">
+            <input type="text" class="input-comentario" placeholder="Escribe tu comentario..." style="
+              width:80%; padding:6px; border-radius:5px; border:1px solid #ccc;">
+            <button class="btn-enviar-comentario" style="
+              padding:6px 10px; background:#16a34a; color:white; border:none; border-radius:5px;
+              cursor:pointer;">Comentar</button>
+          </div>
+        `;
+
+        const btnToggle = divForo.querySelector(".btn-toggle-comentarios");
+        const comentariosContainer = divForo.querySelector(".comentarios-container");
+        const formComentar = divForo.querySelector(".form-comentar");
+        const inputComentario = divForo.querySelector(".input-comentario");
+        const btnEnviar = divForo.querySelector(".btn-enviar-comentario");
+
+        btnToggle.addEventListener("click", () => {
+          if (comentariosContainer.style.display === "none") {
+            comentariosContainer.style.display = "block";
+            formComentar.style.display = "flex";
+            comentariosContainer.innerHTML = "<p>Cargando comentarios...</p>";
+
+            cargarComentarios(id, comentariosContainer);
+            btnToggle.textContent = "Ocultar comentarios";
+          } else {
+            comentariosContainer.style.display = "none";
+            formComentar.style.display = "none";
+            btnToggle.textContent = "Mostrar comentarios";
+          }
+        });
+
+        // ✅ Enviar comentario con window.usuarioId
+        btnEnviar.addEventListener("click", async () => {
+          await inicializarUsuario(); // Asegurar usuario
+          
+          if (!window.usuarioId) {
+            return mostrarNotificacion("❌ Error: Usuario no identificado", "error");
+          }
+
+          const contenido = inputComentario.value.trim();
+          if (!contenido) return mostrarNotificacion("⚠️ Escribe un comentario", "error");
+
+          fetch(`http://localhost:8080/api/comentarios/foro/${id}/usuario/${window.usuarioId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contenido }),
+          })
+            .then((resp) => {
+              if (!resp.ok) throw new Error("Error al enviar comentario");
+              inputComentario.value = "";
+              mostrarNotificacion("💬 Comentario publicado", "exito");
+              cargarComentarios(id, comentariosContainer);
+            })
+            .catch((err) => mostrarNotificacion("❌ " + err.message, "error"));
+        });
+
+        contenedor.appendChild(divForo);
+      });
+    })
+    .catch((error) => {
+      console.error("❌ Error al cargar foros:", error);
+      contenedor.innerHTML =
+        "<p style='color:red;'>Error al cargar los foros. Revisa la consola.</p>";
+    });
+}
+async function cargarComentarios(foroId, contenedor) {
+  await inicializarUsuario();
+  
+  contenedor.innerHTML = "<p style='color:#6b7280;'>Cargando comentarios...</p>";
+
+  fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
+    .then((r) => {
+      if (!r.ok) throw new Error("Error al obtener comentarios");
+      return r.json();
+    })
+    .then((comentarios) => {
+      contenedor.innerHTML = "";
+
+      if (!comentarios || comentarios.length === 0) {
+        contenedor.innerHTML = "<p style='color:#9ca3af;'>Aún no hay comentarios 💭</p>";
+        return;
+      }
+
+      comentarios.forEach((c) => {
+        const divComentario = document.createElement("div");
+        divComentario.classList.add("comentario");
+        divComentario.style.cssText = `
+          border:1px solid #e5e7eb; border-radius:8px; padding:10px; 
+          margin-bottom:10px; background:#f9fafb;
+        `;
+
+        divComentario.innerHTML = `
+          <p style="margin:0; color:#1e3a8a;"><strong>${c.autor}</strong></p>
+          <p style="margin:5px 0;">${c.contenido}</p>
+          <small style="color:#6b7280;">🕒 ${c.fecha}</small>
+
+          <div style="margin-top:8px; display:flex; gap:10px;">
+            <button class="btn-responder" style="
+              padding:4px 8px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;
+            ">↩️ Responder</button>
+
+            ${
+              c.usuarioId === window.usuarioId
+                ? `
+              <button class="btn-editar" style="padding:4px 8px; background:#f59e0b; color:white; border:none; border-radius:6px; cursor:pointer;">✏️ Editar</button>
+              <button class="btn-eliminar" style="padding:4px 8px; background:#dc2626; color:white; border:none; border-radius:6px; cursor:pointer;">🗑️ Eliminar</button>
+            `
+                : ""
+            }
+          </div>
+
+          <div class="respuestas-container" style="margin-top:8px; padding-left:15px; border-left:2px solid #e5e7eb;"></div>
+        `;
+
+        const contRespuestas = divComentario.querySelector(".respuestas-container");
+        cargarRespuestas(c.idComentario, contRespuestas, foroId);
+
+        const btnResponder = divComentario.querySelector(".btn-responder");
+        btnResponder.addEventListener("click", () => {
+          mostrarFormularioRespuesta(foroId, c.idComentario, contRespuestas);
+        });
+
+        const btnEditar = divComentario.querySelector(".btn-editar");
+        if (btnEditar) {
+          btnEditar.addEventListener("click", () => {
+            editarComentario(c.idComentario, foroId, contenedor, c.contenido, null);
+          });
+        }
+
+        const btnEliminar = divComentario.querySelector(".btn-eliminar");
+        if (btnEliminar) {
+          btnEliminar.addEventListener("click", () => {
+            if (!confirm("¿Eliminar este comentario?")) return;
+
+            fetch(`http://localhost:8080/api/comentarios/${c.idComentario}/usuario/${window.usuarioId}`, {
+              method: "DELETE",
+            })
+              .then((resp) => {
+                if (!resp.ok) throw new Error("Error al eliminar comentario");
+                mostrarNotificacion("🗑️ Comentario eliminado", "exito");
+                cargarComentarios(foroId, contenedor);
+              })
+              .catch((err) => mostrarNotificacion("❌ " + err.message, "error"));
+          });
+        }
+
+        contenedor.appendChild(divComentario);
+      });
+    })
+    .catch((err) => {
+      contenedor.innerHTML = "<p style='color:red;'>❌ Error al cargar comentarios</p>";
+      console.error(err);
+      mostrarNotificacion("❌ Error al cargar comentarios", "error");
+    });
+}
+function cargarRespuestas(comentarioPadreId, contenedor, foroId) {
+  if (!contenedor) {
+    console.warn(`⚠️ No se encontró el contenedor de respuestas para comentario ${comentarioPadreId}`);
+    return;
+  }
+
+  fetch(`http://localhost:8080/api/comentarios/respuestas/${comentarioPadreId}`)
+    .then((r) => {
+      if (!r.ok) throw new Error("Error al cargar respuestas");
+      return r.json();
+    })
+    .then((respuestas) => {
+      if (!contenedor) return;
+      contenedor.innerHTML = "";
+      if (!respuestas || respuestas.length === 0) return;
+
+      respuestas.forEach((r) => {
+        const divResp = document.createElement("div");
+        divResp.style.cssText = `
+          background:#eef2ff; padding:8px; border-radius:6px; margin-top:5px;
+        `;
+
+        divResp.innerHTML = `
+          <p style="margin:0; color:#1d4ed8;"><strong>${r.autor}</strong></p>
+          <p style="margin:4px 0;">${r.contenido}</p>
+          <small style="color:#6b7280;">🕒 ${r.fecha}</small>
+
+          <div style="margin-top:6px; display:flex; gap:8px;">
+            ${
+              r.usuarioId === window.usuarioId
+                ? `
+              <button class="btn-editar" style="padding:4px 8px; background:#f59e0b; color:white; border:none; border-radius:6px; cursor:pointer;">✏️ Editar</button>
+              <button class="btn-eliminar" style="padding:4px 8px; background:#dc2626; color:white; border:none; border-radius:6px; cursor:pointer;">🗑️ Eliminar</button>
+            `
+                : ""
+            }
+          </div>
+        `;
+
+        const btnEditar = divResp.querySelector(".btn-editar");
+        if (btnEditar) {
+          btnEditar.addEventListener("click", () => {
+            editarComentario(r.idComentario, foroId, contenedor, r.contenido, comentarioPadreId);
+          });
+        }
+
+        const btnEliminar = divResp.querySelector(".btn-eliminar");
+        if (btnEliminar) {
+          btnEliminar.addEventListener("click", () => {
+            if (!confirm("¿Eliminar esta respuesta?")) return;
+
+            fetch(`http://localhost:8080/api/comentarios/${r.idComentario}/usuario/${window.usuarioId}`, {
+              method: "DELETE",
+            })
+              .then((resp) => {
+                if (!resp.ok) throw new Error("Error al eliminar respuesta");
+                divResp.remove();
+                mostrarNotificacion("🗑️ Respuesta eliminada correctamente", "exito");
+              })
+              .catch((err) => mostrarNotificacion("❌ " + err.message, "error"));
+          });
+        }
+
+        contenedor.appendChild(divResp);
+      });
+    })
+    .catch((err) => {
+      console.error("Error al cargar respuestas:", err);
+      mostrarNotificacion("❌ Error al cargar respuestas", "error");
+    });
+}
+async function mostrarFormularioRespuesta(foroId, comentarioPadreId, contenedor) {
+  await inicializarUsuario();
+  
+  if (contenedor.querySelector(".input-respuesta")) return;
+
+  const form = document.createElement("div");
+  form.style.marginTop = "8px";
+  form.innerHTML = `
+    <input type="text" class="input-respuesta" placeholder="Escribe una respuesta..." 
+           style="width:80%; padding:6px; border:1px solid #ccc; border-radius:6px;">
+    <button class="btn-enviar-respuesta" style="
+      padding:6px 10px; background:#16a34a; color:white; border:none; border-radius:6px; cursor:pointer;
+    ">Enviar</button>
+  `;
+
+  const input = form.querySelector(".input-respuesta");
+  const btn = form.querySelector(".btn-enviar-respuesta");
+
+  btn.addEventListener("click", () => {
+    const contenido = input.value.trim();
+    if (!contenido)
+      return mostrarNotificacion("⚠️ Escribe una respuesta", "error");
+
+    const nuevaResp = { contenido };
+
+    fetch(`http://localhost:8080/api/comentarios/foro/${foroId}/usuario/${window.usuarioId}/responder/${comentarioPadreId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nuevaResp),
+    })
+      .then((resp) => {
+        if (!resp.ok) throw new Error("Error al enviar respuesta");
+        return resp.json();
+      })
+      .then(() => {
+        mostrarNotificacion("💬 Respuesta publicada", "exito");
+        cargarRespuestas(comentarioPadreId, contenedor, foroId);
+        form.remove();
+      })
+      .catch((err) => mostrarNotificacion("❌ " + err.message, "error"));
+  });
+
+  contenedor.appendChild(form);
+}
+function editarComentario(idComentario, foroId, contenedor, contenidoActual, comentarioPadreId = null) {
+  const nuevoContenido = prompt("Editar comentario:", contenidoActual);
+  if (!nuevoContenido) return;
+
+  fetch(`http://localhost:8080/api/comentarios/${idComentario}/usuario/${window.usuarioId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contenido: nuevoContenido }),
+  })
+    .then((resp) => {
+      if (!resp.ok) throw new Error("Error al editar comentario");
+      mostrarNotificacion("✅ Comentario actualizado", "exito");
+      
+      if (comentarioPadreId) {
+        cargarRespuestas(comentarioPadreId, contenedor, foroId);
+      } else {
+        cargarComentarios(foroId, contenedor);
+      }
+    })
+    .catch((err) => mostrarNotificacion("❌ " + err.message, "error"));
+}
+
+  
+
+async function cargarPerfil() {
+  const mainContent = document.getElementById("main-content");
+  mainContent.innerHTML = "<h1 style='text-align:center; color:#1e3a8a;'>Perfil</h1><p style='text-align:center;'>Cargando...</p>";
+
+  try {
+    
+    const resp = await fetch("http://localhost:8080/api/usuario/perfil");
+    if (!resp.ok) throw new Error("Error al obtener perfil");
+    const usuario = await resp.json();
+    window.usuarioId = usuario.id; 
+
+    
+    let cursosHTML = "<p>Cargando cursos...</p>";
+    let cursos = [];
+    try {
+      const cursosResp = await fetch("http://localhost:8080/api/curso");
+      if (!cursosResp.ok) throw new Error("No se pudieron cargar cursos");
+      cursos = await cursosResp.json();
+
+      if (cursos.length > 0) {
+        cursosHTML = `
+          <ul style="list-style:none; padding:0; margin:0;">
+            ${cursos.map(c => `<li style="padding:6px 0; border-bottom:1px solid #e5e7eb;">${c.nombre}</li>`).join("")}
+          </ul>
+        `;
+      } else {
+        cursosHTML = "<p style='color:#555;'>No hay cursos disponibles</p>";
+      }
+    } catch (err) {
+      console.error(err);
+      cursosHTML = "<p style='color:red;'>❌ Error al cargar cursos</p>";
+    }
+
+    // Estadísticas simuladas (puedes adaptarlas si quieres)
+    const cursosCompletados = 0; // Sin datos de estudiante
+    const tareasPendientes = 0;
+    const participacionForos = 0;
+
+    // Render completo
     mainContent.innerHTML = `
-      <div style="max-width:900px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:25px;">
-        <!-- Información del perfil -->
-        <div class="card" style="text-align:center;">
-          <img src="icons/3106807.png" alt="Foto perfil" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
-          <h2>${usuario.nombre} ${usuario.apellido}</h2>
-          <p><strong>Correo:</strong> ${usuario.email}</p>
-          <p><strong>Cargo:</strong> ${usuario.cargo}</p>
-          <button style="
-              margin-top:10px; 
-              padding:8px 14px; 
-              border-radius:8px; 
-              border:none; 
-              background:#3b82f6; 
-              color:white; 
-              cursor:pointer; 
-              transition:all 0.25s ease;" 
-              onmouseover="this.style.transform='scale(1.05)'" 
-              onmouseout="this.style.transform='scale(1)'"
-              onclick="alert('Aquí luego implementamos subir foto')">
+      <div style="
+        max-width:900px;
+        margin:30px auto;
+        background:white;
+        border-radius:15px;
+        box-shadow:0 10px 25px rgba(0,0,0,0.15);
+        padding:30px;
+        font-family: 'Arial', sans-serif;
+        display:flex;
+        gap:30px;
+        flex-wrap:wrap;
+        justify-content:center;
+      ">
+        <!-- Foto y botón -->
+        <div style="flex:1; min-width:250px; display:flex; flex-direction:column; align-items:center; gap:15px;">
+          <img src="icons/3106807.png" alt="Foto perfil" style="
+            width:140px;
+            height:140px;
+            border-radius:50%;
+            object-fit:cover;
+            border:4px solid #3b82f6;
+          ">
+          <h2 style="margin:0; color:#1e3a8a;">${usuario.nombre} ${usuario.apellido}</h2>
+          <button onclick="alert('Aquí luego implementamos subir foto')" style="
+            background:#3b82f6;
+            color:white;
+            border:none;
+            padding:10px 20px;
+            border-radius:8px;
+            cursor:pointer;
+            font-size:14px;
+            transition: all 0.2s;
+          " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
             Cambiar foto
           </button>
         </div>
 
-        <!-- Indicadores de estadísticas -->
-        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center;">
-          <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
-            <h3>Cursos completados</h3>
-            <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">7</p>
+        <!-- Información y cursos -->
+        <div style="flex:2; min-width:300px;">
+          <h3 style="color:#1e3a8a; border-bottom:2px solid #3b82f6; padding-bottom:5px;">Información del Estudiante</h3>
+          <table style="width:100%; margin-top:15px; border-collapse:collapse; font-size:14px;">
+            <tr>
+              <td style="padding:8px; font-weight:bold; color:#555;">Correo:</td>
+              <td style="padding:8px; color:#333;">${usuario.email}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px; font-weight:bold; color:#555;">Cargo:</td>
+              <td style="padding:8px; color:#333;">${usuario.cargo}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px; font-weight:bold; color:#555;">Teléfono:</td>
+              <td style="padding:8px; color:#333;">${usuario.telefono || 'No registrado'}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px; font-weight:bold; color:#555;">Fecha de registro:</td>
+              <td style="padding:8px; color:#333;">${new Date(usuario.fechaRegistro).toLocaleDateString()}</td>
+            </tr>
+          </table>
+
+          <h3 style="color:#1e3a8a; border-bottom:2px solid #3b82f6; padding-bottom:5px; margin-top:20px;">Cursos Disponibles</h3>
+          <div style="max-height:200px; overflow-y:auto; margin-top:10px; border:1px solid #e5e7eb; border-radius:8px; padding:10px;">
+            ${cursosHTML}
           </div>
 
-          <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
-            <h3>Tareas pendientes</h3>
-            <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">5</p>
-          </div>
-
-          <div class="card-tarea" style="flex:1 1 250px; text-align:center;">
-            <h3>Participación en foros</h3>
-            <p style="font-size:1.8rem; font-weight:700; color:#3b82f6; margin:8px 0;">12</p>
+          <h3 style="color:#1e3a8a; border-bottom:2px solid #3b82f6; padding-bottom:5px; margin-top:20px;">Estadísticas</h3>
+          <div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:10px;">
+            <div style="flex:1; min-width:100px; background:#3b82f6; color:white; padding:15px; border-radius:8px; text-align:center;">
+              <h4 style="margin:0;">${cursosCompletados}</h4>
+              <p style="margin:0; font-size:12px;">Cursos completados</p>
+            </div>
+            <div style="flex:1; min-width:100px; background:#10b981; color:white; padding:15px; border-radius:8px; text-align:center;">
+              <h4 style="margin:0;">${tareasPendientes}</h4>
+              <p style="margin:0; font-size:12px;">Tareas pendientes</p>
+            </div>
+            <div style="flex:1; min-width:100px; background:#f59e0b; color:white; padding:15px; border-radius:8px; text-align:center;">
+              <h4 style="margin:0;">${participacionForos}</h4>
+              <p style="margin:0; font-size:12px;">Participación en foros</p>
+            </div>
           </div>
         </div>
       </div>
     `;
-
   } catch (err) {
     console.error(err);
     mainContent.innerHTML = "<h1>Perfil</h1><p style='color:red;'>❌ Error al cargar perfil</p>";
@@ -890,29 +1184,32 @@ async function cargarPerfil() {
 }
 
 
+
   
 function cargarCalificaciones() {
+
   const mainContent = document.getElementById("main-content");
   mainContent.innerHTML = `
     <h1 style="font-size:1.6rem; margin-bottom:15px;">📊 Promedio de Calificaciones por Curso</h1>
-    <input type="text" id="buscarCurso" placeholder="Buscar curso..." 
-           style="width: 250px; padding: 6px 10px; margin-bottom: 20px; border-radius: 8px; 
-                  border: 1px solid #ddd; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s;">
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom: 20px;">
+      <input type="text" id="buscarCurso" placeholder="Buscar curso..." 
+             style="width: 250px; padding: 6px 10px; border-radius: 8px; 
+                    border: 1px solid #ddd; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s;">
+      <button id="btnExportarXLSX" class="btn-primary">📥 Exportar XLSX</button>
+    </div>
     <div id="listaCursos"></div>
     <div id="detalleTareas" style="margin-top:30px;"></div>
   `;
 
-  // ✅ Usamos el ID global guardado en window
   const idUsuario = window.usuarioId;
 
   if (!idUsuario) {
-    console.error("⚠️ usuarioId no definido. Asegúrate de que cargarPerfil() se haya ejecutado antes.");
+    console.error("⚠️ usuarioId no definido.");
     document.getElementById("listaCursos").innerHTML = `
       <p style="color:red;">❌ No se pudo cargar calificaciones: usuario no identificado</p>`;
     return;
   }
 
-  // 🔹 Endpoint filtrado por usuario
   fetch(`http://localhost:8080/api/entregas/promedios/usuario/${idUsuario}`)
     .then(response => {
       if (!response.ok) throw new Error("Error al obtener promedios");
@@ -944,7 +1241,7 @@ function cargarCalificaciones() {
         html += `</ul>`;
         listaDiv.innerHTML = html;
 
-        // 🔸 Animación de aparición
+        // Animación
         document.querySelectorAll("#ulCursos li").forEach((li, i) => {
           setTimeout(() => {
             li.style.opacity = 1;
@@ -952,7 +1249,6 @@ function cargarCalificaciones() {
           }, i * 60);
         });
 
-        // 🔸 Click dinámico para mostrar tareas
         document.querySelectorAll("#ulCursos li").forEach(li => {
           li.addEventListener("click", () => {
             verTareasCurso(Number(li.dataset.id), li.dataset.nombre);
@@ -962,74 +1258,51 @@ function cargarCalificaciones() {
 
       mostrarCursos(cursos);
 
-      // 🔍 Filtrar cursos en tiempo real
+      // Filtrar cursos en tiempo real
       document.getElementById("buscarCurso").addEventListener("input", e => {
         const texto = e.target.value.toLowerCase();
         const filtrados = cursos.filter(c => c.curso.toLowerCase().includes(texto));
         mostrarCursos(filtrados);
       });
+
+      // ✅ Exportar XLSX
+      document.getElementById("btnExportarXLSX").addEventListener("click", () => {
+        if (!cursos || cursos.length === 0) return alert("⚠️ No hay datos para exportar");
+
+        const wb = XLSX.utils.book_new();
+        const ws_data = [["Curso", "Promedio"]];
+
+        cursos.forEach(c => {
+          ws_data.push([c.curso, parseFloat(c.promedio).toFixed(2)]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, "Promedios");
+        XLSX.writeFile(wb, "Promedios_Cursos.xlsx");
+      });
+
     })
     .catch(err => {
       console.error("❌ Error al cargar promedios:", err);
       document.getElementById("listaCursos").innerHTML = `
         <p style="color:red;">❌ Error al cargar calificaciones.<br>${err.message}</p>`;
     });
+    document.getElementById("btnExportarXLSX").addEventListener("click", () => {
+  if (!cursos || cursos.length === 0) return alert("⚠️ No hay datos para exportar");
+
+  const wb = XLSX.utils.book_new();
+  const ws_data = [["Curso", "Promedio"]];
+
+  cursos.forEach(c => {
+    ws_data.push([c.curso, parseFloat(c.promedio).toFixed(2)]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  XLSX.utils.book_append_sheet(wb, ws, "Promedios");
+  XLSX.writeFile(wb, "Promedios_Cursos.xlsx");
+});
+
 }
-
-
-function verTareasCurso(idCurso, nombreCurso) {
-  const detalleDiv = document.getElementById("detalleTareas");
-  detalleDiv.innerHTML = `
-    <h2 class="titulo-curso">📘 Tareas de ${nombreCurso}</h2>
-    <p>Cargando...</p>
-  `;
-
-  const idUsuario = window.usuarioId;
-
-  if (!idUsuario) {
-    detalleDiv.innerHTML = `<p style="color:red;">❌ Usuario no identificado</p>`;
-    return;
-  }
-
-  fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/usuario/${idUsuario}`)
-    .then(response => {
-      if (!response.ok) throw new Error("Error al obtener tareas");
-      return response.json();
-    })
-    .then(tareas => {
-      if (!tareas || tareas.length === 0) {
-        detalleDiv.innerHTML = `
-          <h2 class="titulo-curso">📘 Tareas de ${nombreCurso}</h2>
-          <p>No hay tareas registradas.</p>
-        `;
-        return;
-      }
-
-      let html = `<div class="grid-tareas">`;
-
-      tareas.forEach(t => {
-        html += `
-          <div class="card-tarea">
-            <h3>${t.titulo}</h3>
-            <p>Nota: <strong>${t.calificacion ?? "Sin calificar"}</strong></p>
-            <p>Fecha entrega: ${t.fechaEntrega ?? "No registrada"}</p>
-          </div>
-        `;
-      });
-
-      html += `</div>`;
-
-      detalleDiv.innerHTML = `
-        <h2 class="titulo-curso">📘 Tareas de ${nombreCurso}</h2>
-        ${html}
-      `;
-    })
-    .catch(err => {
-      console.error("❌ Error al cargar tareas:", err);
-      detalleDiv.innerHTML = `<p style="color:red;">❌ Error al cargar tareas</p>`;
-    });
-}
-
 
 
 function verTareasCurso(idCurso, nombreCurso) {
