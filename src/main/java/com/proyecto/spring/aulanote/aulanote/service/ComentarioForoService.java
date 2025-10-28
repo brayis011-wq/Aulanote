@@ -85,29 +85,33 @@ public class ComentarioForoService {
     }
 
     // 🔹 Eliminar comentario (dueño o profesor/admin)
-    public boolean eliminar(Integer idComentario, Integer usuarioId) {
-        if (idComentario == null || usuarioId == null) return false;
+   public boolean eliminar(Integer idComentario, Integer usuarioId) {
+    if (idComentario == null || usuarioId == null) return false;
 
-        return comentarioRepo.findById(idComentario).map(c -> {
-            Usuario autor = c.getUsuario();
+    return comentarioRepo.findById(idComentario).map(c -> {
+        Usuario autor = c.getUsuario();
+        Optional<Usuario> usuarioOpt = usuarioRepo.findById(usuarioId);
 
-            // ✅ dueño
-            if (autor.getId().equals(usuarioId)) {
-                comentarioRepo.deleteById(idComentario);
-                return true;
-            }
+        if (usuarioOpt.isEmpty()) return false;
+        Usuario usuario = usuarioOpt.get();
 
-            // ✅ admin/profesor (ejemplo con campo cargo)
-            if (autor.getCargo() != null &&
-                    (autor.getCargo().equalsIgnoreCase("profesor")
-                            || autor.getCargo().equalsIgnoreCase("admin"))) {
-                comentarioRepo.deleteById(idComentario);
-                return true;
-            }
+        // ✅ Puede eliminar si es dueño
+        if (autor.getId().equals(usuarioId)) {
+            comentarioRepo.deleteById(idComentario);
+            return true;
+        }
 
-            return false;
-        }).orElse(false);
-    }
+        // ✅ O si el usuario que intenta eliminar es profesor o admin
+        if (usuario.getCargo() != null &&
+                (usuario.getCargo().equalsIgnoreCase("profesor")
+                        || usuario.getCargo().equalsIgnoreCase("admin"))) {
+            comentarioRepo.deleteById(idComentario);
+            return true;
+        }
+
+        return false;
+    }).orElse(false);
+}
     // 🔹 Responder a un comentario
 public ComentarioForoDTO responderComentario(Integer foroId, Integer comentarioPadreId, Integer usuarioId, String contenido) {
     if (foroId == null || comentarioPadreId == null || usuarioId == null || contenido == null || contenido.trim().isEmpty()) {

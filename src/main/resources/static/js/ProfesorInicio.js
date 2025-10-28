@@ -1367,14 +1367,19 @@ function cargarComentarios(foroId, contenedor) {
     });
 }
 
-// --- Cargar respuestas ---
 function cargarRespuestas(comentarioPadreId, contenedor, foroId) {
+  if (!contenedor) {
+    console.warn(`⚠️ No se encontró el contenedor de respuestas para comentario ${comentarioPadreId}`);
+    return;
+  }
+
   fetch(`http://localhost:8080/api/comentarios/respuestas/${comentarioPadreId}`)
     .then((r) => {
       if (!r.ok) throw new Error("Error al cargar respuestas");
       return r.json();
     })
     .then((respuestas) => {
+      if (!contenedor) return;
       contenedor.innerHTML = "";
       if (!respuestas || respuestas.length === 0) return;
 
@@ -1383,16 +1388,60 @@ function cargarRespuestas(comentarioPadreId, contenedor, foroId) {
         divResp.style.cssText = `
           background:#eef2ff; padding:8px; border-radius:6px; margin-top:5px;
         `;
+
         divResp.innerHTML = `
           <p style="margin:0; color:#1d4ed8;"><strong>${r.autor}</strong></p>
           <p style="margin:4px 0;">${r.contenido}</p>
           <small style="color:#6b7280;">🕒 ${r.fecha}</small>
+
+          <div style="margin-top:6px; display:flex; gap:8px;">
+            ${
+              r.usuarioId === profesorGlobal.id
+                ? `
+              <button class="btn-editar" style="padding:4px 8px; background:#f59e0b; color:white; border:none; border-radius:6px; cursor:pointer;">✏️ Editar</button>
+              <button class="btn-eliminar" style="padding:4px 8px; background:#dc2626; color:white; border:none; border-radius:6px; cursor:pointer;">🗑️ Eliminar</button>
+            `
+                : ""
+            }
+          </div>
         `;
+
+        // --- Evento editar ---
+        const btnEditar = divResp.querySelector(".btn-editar");
+        if (btnEditar) {
+          btnEditar.addEventListener("click", () => {
+            editarComentario(r.idComentario, foroId, contenedor, r.contenido);
+          });
+        }
+
+        // --- Evento eliminar ---
+        const btnEliminar = divResp.querySelector(".btn-eliminar");
+        if (btnEliminar) {
+          btnEliminar.addEventListener("click", () => {
+            if (!confirm("¿Eliminar esta respuesta?")) return;
+
+            fetch(`http://localhost:8080/api/comentarios/${r.idComentario}/usuario/${profesorGlobal.id}`, {
+              method: "DELETE",
+            })
+              .then((resp) => {
+                if (!resp.ok) throw new Error("Error al eliminar respuesta");
+
+                // ✅ Eliminamos del DOM directamente
+                divResp.remove();
+
+                mostrarNotificacion("🗑️ Respuesta eliminada correctamente", "exito");
+              })
+              .catch((err) => mostrarNotificacion("❌ " + err.message, "error"));
+          });
+        }
+
         contenedor.appendChild(divResp);
       });
     })
     .catch((err) => console.error("Error al cargar respuestas:", err));
 }
+
+
 
 // --- Formulario de respuesta ---
 function mostrarFormularioRespuesta(foroId, comentarioPadreId, contenedor) {
@@ -1457,13 +1506,19 @@ function editarComentario(idComentario, foroId, contenedor, contenidoActual) {
     .catch((err) => mostrarNotificacion("❌ " + err.message, "error"));
 }
 
-// --- Crear nuevo comentario principal ---
 function enviarComentarioPrincipal(foroId, contenedor) {
   const input = document.getElementById("inputComentarioPrincipal");
   const contenido = input.value.trim();
 
   if (!contenido)
     return mostrarNotificacion("⚠️ Escribe un comentario", "error");
+
+  console.log("➡️ Intentando enviar comentario:", {
+    foroId,
+    usuarioId: profesorGlobal.id,
+    contenido,
+    url: `http://localhost:8080/api/comentarios/foro/${foroId}/usuario/${profesorGlobal.id}`
+  });
 
   const nuevoComentario = { contenido };
 
@@ -1472,9 +1527,11 @@ function enviarComentarioPrincipal(foroId, contenedor) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(nuevoComentario),
   })
-    .then((resp) => {
-      if (!resp.ok) throw new Error("Error al enviar comentario");
-      return resp.json();
+    .then(async (resp) => {
+      const texto = await resp.text();
+      console.log("📥 Respuesta del servidor:", resp.status, texto);
+      if (!resp.ok) throw new Error(texto);
+      return JSON.parse(texto);
     })
     .then(() => {
       mostrarNotificacion("💬 Comentario publicado", "exito");

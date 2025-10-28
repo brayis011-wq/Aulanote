@@ -334,6 +334,9 @@ async function cargarListaTareas(idUsuario) {
 }
 
 // ------------------ Modal de subida ------------------
+// ========================================
+// MODAL DE SUBIDA - VERSIÓN CORREGIDA
+// ========================================
 function abrirModalTarea(tarea, fecha, idUsuario) {
   const modal = document.getElementById("modalTarea");
   modal.style.display = "flex";
@@ -350,59 +353,153 @@ function abrirModalTarea(tarea, fecha, idUsuario) {
     modal.style.display = "none";
     document.getElementById("nombreTareaModal").value = "";
     document.getElementById("archivoTareaModal").value = "";
+    document.getElementById("mensajeEstado").textContent = "";
   };
 
   const btnSubir = document.getElementById("btnSubirModal");
-  btnSubir.onclick = async () => {
+  
+  // ✅ Remover eventos anteriores clonando el botón
+  const nuevoBtn = btnSubir.cloneNode(true);
+  btnSubir.parentNode.replaceChild(nuevoBtn, btnSubir);
+  
+  nuevoBtn.onclick = async () => {
     const nombre = document.getElementById("nombreTareaModal").value.trim();
     const archivo = document.getElementById("archivoTareaModal").files[0];
     const mensajeEstado = document.getElementById("mensajeEstado");
 
+    console.log("🔍 DEBUG Subir tarea:", {
+      nombreActividad: tarea.nombreActividad,
+      idTarea: tarea.idTarea,
+      idCurso: tarea.curso?.idCurso,
+      idUsuario: idUsuario,
+      archivo: archivo?.name
+    });
+
+    // Validaciones
     if (!nombre || !archivo) {
       mensajeEstado.textContent = "❌ Completa el nombre y selecciona un archivo PDF";
       mensajeEstado.style.color = "red";
+      if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion("❌ Completa todos los campos", "error");
+      }
       return;
     }
 
     if (archivo.type !== "application/pdf") {
       mensajeEstado.textContent = "❌ Solo se permiten archivos PDF";
       mensajeEstado.style.color = "red";
+      if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion("❌ Solo archivos PDF", "error");
+      }
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (archivo.size > maxSize) {
+      mensajeEstado.textContent = "❌ El archivo es muy grande (máx. 10MB)";
+      mensajeEstado.style.color = "red";
+      if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion("❌ Archivo muy grande", "error");
+      }
       return;
     }
 
     const idCurso = tarea.curso?.idCurso;
     if (!idCurso) {
+      console.error("❌ No hay idCurso en el objeto tarea");
       mensajeEstado.textContent = "❌ Esta tarea no tiene curso asociado";
       mensajeEstado.style.color = "red";
+      if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion("❌ Sin curso asociado", "error");
+      }
+      return;
+    }
+
+    // ✅ Validar que exista idTarea
+    const idTarea = tarea.idTarea;
+    if (!idTarea) {
+      console.error("❌ No hay idTarea en el objeto tarea");
+      mensajeEstado.textContent = "❌ Esta tarea no tiene ID válido";
+      mensajeEstado.style.color = "red";
+      if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion("❌ ID de tarea inválido", "error");
+      }
       return;
     }
 
     mensajeEstado.textContent = "⏳ Subiendo archivo...";
     mensajeEstado.style.color = "#2563eb";
-    btnSubir.disabled = true;
+    nuevoBtn.disabled = true;
 
     const formData = new FormData();
     formData.append("nombreTarea", nombre);
     formData.append("archivo", archivo);
     formData.append("idUsuario", idUsuario);
+    formData.append("idTarea", idTarea); // ✅ AGREGAR EL ID DE LA TAREA
+
+    const url = `http://localhost:8080/api/entregas/curso/${idCurso}/subir`;
+    console.log("📤 URL del endpoint:", url);
+    console.log("📤 Datos a enviar:");
+    console.log("  - nombreTarea:", nombre);
+    console.log("  - archivo:", archivo.name);
+    console.log("  - idUsuario:", idUsuario);
+    console.log("  - idTarea:", idTarea); // ✅ LOG DEL ID TAREA
+    console.log("  - idCurso:", idCurso);
 
     try {
-      const resp = await fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/subir`, {
+      const resp = await fetch(url, {
         method: "POST",
         body: formData
       });
-      if (!resp.ok) throw new Error(await resp.text());
+
+      console.log("📥 Status:", resp.status);
+
+      // Leer respuesta
+      const contentType = resp.headers.get("content-type");
+      let errorData;
+      
+      if (contentType && contentType.includes("application/json")) {
+        errorData = await resp.json();
+      } else {
+        errorData = await resp.text();
+      }
+
+      if (!resp.ok) {
+        const errorMsg = typeof errorData === 'string' ? errorData : (errorData.message || errorData.error || `Error ${resp.status}`);
+        console.error("❌ Error del servidor:", errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      console.log("✅ Tarea subida exitosamente");
+      
       mensajeEstado.textContent = "✅ Tarea subida correctamente";
       mensajeEstado.style.color = "#10b981";
+      if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion("✅ Tarea subida con éxito", "exito");
+      }
+
       setTimeout(() => {
         modal.style.display = "none";
+        document.getElementById("nombreTareaModal").value = "";
+        document.getElementById("archivoTareaModal").value = "";
+        document.getElementById("mensajeEstado").textContent = "";
         cargarEntregas(idUsuario);
       }, 1500);
+
     } catch (err) {
-      mensajeEstado.textContent = "❌ " + err.message;
+      console.error("❌ Error completo:", err);
+      
+      let mensajeError = err.message || "Error desconocido";
+      
+      mensajeEstado.textContent = "❌ " + mensajeError;
       mensajeEstado.style.color = "red";
+      
+      if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion("❌ Error: " + mensajeError, "error");
+      }
+      
     } finally {
-      btnSubir.disabled = false;
+      nuevoBtn.disabled = false;
     }
   };
 }
