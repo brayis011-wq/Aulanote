@@ -178,75 +178,80 @@ async function cargarMensajesRecibidos(idUsuario) {
     }
   }
 
-  
+
 let editingTareaId = null; 
 async function cargarCrearTareas(tareaToEdit = null) {
   editingTareaId = tareaToEdit ? tareaToEdit.id : null;
 
   mainContent.innerHTML = `
-    <div class="card">
-      <h2>${editingTareaId ? "Editar Tarea" : "Crear Nueva Tarea"}</h2>
-      <form id="formCrearTarea" class="formulario">
-        <div class="form-group">
-          <label for="nombreActividad">Nombre de la Actividad</label>
-          <input type="text" id="nombreActividad" required>
-        </div>
-
-        <div class="form-group">
-          <label for="descripcion">Descripción</label>
-          <textarea id="descripcion" rows="4" required></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="fechaLimite">Fecha Límite</label>
-          <input type="datetime-local" id="fechaLimite" required>
-        </div>
-
-        <div class="form-group">
-          <label for="cursoId">Curso</label>
-          <select id="cursoId" required>
+    <div style="max-width:900px; margin:30px auto; display:flex; flex-direction:column; gap:30px;">
+      <div style="background:white; padding:25px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.1);">
+        <h2 style="color:#3b82f6;">${editingTareaId ? "✏️ Editar Tarea" : "📝 Crear Nueva Tarea"}</h2>
+        <form id="formCrearTarea" style="display:flex; flex-direction:column; gap:15px; margin-top:15px;">
+          <input type="text" id="nombreActividad" placeholder="Nombre de la actividad" required
+            style="padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px;">
+          <textarea id="descripcion" rows="4" placeholder="Descripción" required
+            style="padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px;"></textarea>
+          <input type="datetime-local" id="fechaLimite" required
+            style="padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px;">
+          <select id="cursoId" required style="padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px;">
             <option value="">-- Selecciona un curso --</option>
           </select>
-        </div>
+          <input type="text" id="profesor" value="${profesorGlobal.nombre}" readonly
+            style="padding:10px; border-radius:8px; border:1px solid #ccc; background:#f3f4f6; font-size:14px;">
 
-        <div class="form-group">
-          <label for="profesor">Profesor</label>
-          <input type="text" id="profesor" value="${profesorGlobal.nombre}" readonly>
-        </div>
+          <div style="display:flex; gap:12px; margin-top:10px;">
+            <button type="submit" style="
+              flex:1; 
+              padding:10px; 
+              background:#3b82f6; 
+              color:white; 
+              border:none; 
+              border-radius:8px;
+              cursor:pointer;
+              font-weight:bold;
+              transition:0.2s;
+            " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+              ${editingTareaId ? "Actualizar" : "Crear"}
+            </button>
 
-        <div style="display:flex; gap:8px; margin-top:12px;">
-          <button type="submit" class="btn-primary">${editingTareaId ? "Actualizar" : "Crear"}</button>
-          <button type="button" id="btn-cancelar" class="btn-secondary">Cancelar</button>
-        </div>
-      </form>
+            <button type="button" id="btn-cancelar" style="
+              flex:1; 
+              padding:10px; 
+              background:#6b7280; 
+              color:white; 
+              border:none; 
+              border-radius:8px; 
+              cursor:pointer;
+              font-weight:bold;
+              transition:0.2s;
+            " onmouseover="this.style.background='#4b5563'" onmouseout="this.style.background='#6b7280'">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div id="listaTareasContainer"></div>
     </div>
-
-    <!-- Contenedor de lista -->
-    <div id="listaTareasContainer"></div>
   `;
 
   await cargarCursosSelect();
 
-  // precargar valores si estamos editando
   if (tareaToEdit) {
     document.getElementById("nombreActividad").value = tareaToEdit.nombreActividad || "";
     document.getElementById("descripcion").value = tareaToEdit.descripcion || "";
-    document.getElementById("fechaLimite").value = tareaToEdit.fechaLimite
-      ? toInputDatetimeLocal(tareaToEdit.fechaLimite)
-      : "";
+    document.getElementById("fechaLimite").value = tareaToEdit.fechaLimite ? toInputDatetimeLocal(tareaToEdit.fechaLimite) : "";
     document.getElementById("cursoId").value = tareaToEdit.curso ? tareaToEdit.curso.idCurso : "";
   }
 
-  // cancelar vuelve a la lista
   document.getElementById("btn-cancelar").addEventListener("click", () => {
     editingTareaId = null;
     document.getElementById("formCrearTarea").reset();
     cargarListaTareas();
   });
 
-  // submit del formulario
-  const form = document.getElementById("formCrearTarea");
-  form.addEventListener("submit", async (e) => {
+  document.getElementById("formCrearTarea").addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
       nombreActividad: document.getElementById("nombreActividad").value,
@@ -257,26 +262,16 @@ async function cargarCrearTareas(tareaToEdit = null) {
     };
 
     try {
-      let resp;
-      if (editingTareaId) {
-        resp = await fetch(`/api/tareas/actualizar/${editingTareaId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-      } else {
-        resp = await fetch("/api/tareas/crear", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-      }
+      const url = editingTareaId ? `/api/tareas/actualizar/${editingTareaId}` : "/api/tareas/crear";
+      const method = editingTareaId ? "PUT" : "POST";
+
+      const resp = await fetch(url, { method, headers: { "Content-Type":"application/json" }, body: JSON.stringify(payload) });
 
       if (resp.ok) {
         alert(editingTareaId ? "✅ Tarea actualizada" : "✅ Tarea creada");
         editingTareaId = null;
-        form.reset();
-        cargarListaTareas();
+        document.getElementById("formCrearTarea").reset();
+        cargarListaTareas("mias");
       } else {
         console.error(await resp.text());
         alert("❌ Error al guardar la tarea");
@@ -290,36 +285,20 @@ async function cargarCrearTareas(tareaToEdit = null) {
   cargarListaTareas("mias");
 }
 
+
 async function cargarListaTareas(filtro = "mias") {
   const container = document.getElementById("listaTareasContainer");
   if (!container) return;
 
   container.innerHTML = `
-    <div class="card" style="margin-top:16px;">
-      <h2>${filtro === "todas" ? "Todas las Tareas" : "Mis Tareas"}</h2>
-      <div style="margin-bottom:10px; display:flex; gap:8px;">
-        <button id="btn-misTareas" class="btn-secondary">Mis tareas</button>
-        <button id="btn-todasTareas" class="btn-secondary">Todas</button>
-      </div>
-      <div style="overflow:auto;">
-        <table class="tabla-tareas" style="width:100%;">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Actividad</th>
-              <th>Descripción</th>
-              <th>Fecha Límite</th>
-              <th>Curso</th>
-              <th>Profesor</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyTareas">
-            <tr><td colspan="7">Cargando...</td></tr>
-          </tbody>
-        </table>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 style="color:#3b82f6;">${filtro === "todas" ? "Todas las Tareas" : "Mis Tareas"}</h2>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-misTareas" style="padding:6px 12px; border:none; border-radius:8px; background:#3b82f6; color:white; cursor:pointer;">Mis tareas</button>
+        <button id="btn-todasTareas" style="padding:6px 12px; border:none; border-radius:8px; background:#10b981; color:white; cursor:pointer;">Todas</button>
       </div>
     </div>
+    <div id="tarjetasTareas" style="display:flex; flex-wrap:wrap; gap:16px;"></div>
   `;
 
   document.getElementById("btn-misTareas").addEventListener("click", () => cargarListaTareas("mias"));
@@ -332,48 +311,66 @@ async function cargarListaTareas(filtro = "mias") {
     if (!resp.ok) throw new Error("Error al cargar tareas");
     const tareas = await resp.json();
 
-    const tbody = document.getElementById("tbodyTareas");
+    const tarjetasContainer = document.getElementById("tarjetasTareas");
     if (!tareas || tareas.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7">📌 No hay tareas para mostrar</td></tr>`;
+      tarjetasContainer.innerHTML = `<p style="width:100%; text-align:center; padding:12px;">📌 No hay tareas para mostrar</p>`;
       return;
     }
 
-    // Renderizar todas las tareas
-    tbody.innerHTML = tareas.map(t => {
+    tarjetasContainer.innerHTML = tareas.map(t => {
+      const cursoNombre = t.nombreCurso || (t.curso ? t.curso.nombre : "—");
+      const profesorNombre = t.profesorNombre || profesorGlobal.nombre;
+
       const acciones = (t.profesorId === profesorGlobal.id) ? `
-        <button class="btn-accion editar" data-id="${t.id}">✏️</button>
-        <button class="btn-accion eliminar" data-id="${t.id}">🗑️</button>
+        <button class="btn-editar" data-id="${t.id}" style="
+          background:#3b82f6; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;
+          font-weight:bold; margin-right:6px;">✏️ Editar</button>
+        <button class="btn-eliminar" data-id="${t.id}" style="
+          background:#000; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;
+          font-weight:bold;">🗑️ Eliminar</button>
       ` : "";
 
-      // Si usas DTO plano, curso puede venir con idCurso y nombreCurso
-      const cursoNombre = t.nombreCurso || (t.curso ? t.curso.nombre : "—");
-
       return `
-        <tr>
-          <td>${t.id}</td>
-          <td>${t.nombreActividad}</td>
-          <td>${t.descripcion}</td>
-          <td>${t.fechaLimite ? prettyDate(t.fechaLimite) : ""}</td>
-          <td>${cursoNombre}</td>
-          <td>Profesor ${t.profesorId}</td>
-          <td>${acciones}</td>
-        </tr>
+        <div style="
+          flex:1 1 250px; 
+          background:white; 
+          border-radius:12px; 
+          box-shadow:0 6px 18px rgba(0,0,0,0.08); 
+          padding:16px; 
+          display:flex; 
+          flex-direction:column; 
+          justify-content:space-between;
+        ">
+          <div>
+            <h3 style="color:#3b82f6; margin:0 0 8px 0;">${t.nombreActividad}</h3>
+            <p style="font-size:14px; color:#555; margin:0 0 8px 0;">${t.descripcion}</p>
+            <p style="font-size:12px; color:#10b981; margin:2px 0;"><strong>Curso:</strong> ${cursoNombre}</p>
+            <p style="font-size:12px; color:#555; margin:2px 0;"><strong>Profesor:</strong> ${profesorNombre}</p>
+            <p style="font-size:12px; color:#f59e0b; margin:2px 0;"><strong>Fecha límite:</strong> ${t.fechaLimite ? prettyDate(t.fechaLimite) : "—"}</p>
+          </div>
+          <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+            ${acciones}
+          </div>
+        </div>
       `;
     }).join("");
 
     // Asociar eventos a botones
-    document.querySelectorAll('.btn-accion.editar').forEach(btn =>
+    document.querySelectorAll('.btn-editar').forEach(btn =>
       btn.addEventListener('click', () => editarTarea(parseInt(btn.dataset.id)))
     );
-    document.querySelectorAll('.btn-accion.eliminar').forEach(btn =>
+    document.querySelectorAll('.btn-eliminar').forEach(btn =>
       btn.addEventListener('click', () => eliminarTarea(parseInt(btn.dataset.id)))
     );
 
   } catch (err) {
     console.error(err);
-    document.getElementById("tbodyTareas").innerHTML = `<tr><td colspan="7">⚠️ Error al cargar las tareas</td></tr>`;
+    document.getElementById("tarjetasTareas").innerHTML = `<p style="width:100%; text-align:center; padding:12px; color:red;">⚠️ Error al cargar las tareas</p>`;
   }
 }
+
+
+
 
 async function editarTarea(id) {
   try {
