@@ -58,4 +58,11 @@ public class UsuarioController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+        @PutMapping("/restaurar/{id}")
+    public ResponseEntity<Usuario> restaurarUsuario(@PathVariable int id) {
+        return usuarioService.restaurarUsuario(id)
+                .map(usuarioRestaurado -> new ResponseEntity<>(usuarioRestaurado, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
 }

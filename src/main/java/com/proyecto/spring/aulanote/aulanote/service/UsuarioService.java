@@ -20,9 +20,22 @@ public class UsuarioService {
     }
 
     // Listar todos los usuarios
-    public List<Usuario> listarUsuarios() {
-        return usuarioRepository.findAll();
+public List<Usuario> listarUsuarios() {
+    return usuarioRepository.findAll(); // no filtra por activo
+}
+
+    public Optional<Usuario> restaurarUsuario(int id) {
+    Optional<Usuario> usuarioOptional = usuarioRepository.findById(id);
+    if (usuarioOptional.isPresent()) {
+        Usuario usuario = usuarioOptional.get();
+        usuario.setActivo(true); // 👈 lo marcamos como activo
+        usuarioRepository.save(usuario);
+        return Optional.of(usuario);
+    } else {
+        return Optional.empty();
     }
+}
+
 
     // Crear usuario nuevo
     public Usuario crearUsuario(Usuario usuario) {
@@ -47,11 +60,17 @@ public class UsuarioService {
     }
 
     // Eliminar usuario
-    public Boolean eliminarUsuario(int id) {
-        return usuarioRepository.findById(id).map(usuario -> {
-            usuarioRepository.delete(usuario);
-            return true;
-        }).orElse(false);
+public Boolean eliminarUsuario(int id) {
+    Optional<Usuario> usuarioOptional = usuarioRepository.findById(id);
+    if (usuarioOptional.isPresent()) {
+        Usuario usuario = usuarioOptional.get();
+        usuario.setActivo(false); // 👈 lo marcamos como inactivo
+        usuarioRepository.save(usuario); // lo guardamos nuevamente
+        return true;
+    } else {
+        return false;
     }
+}
+
     
 }

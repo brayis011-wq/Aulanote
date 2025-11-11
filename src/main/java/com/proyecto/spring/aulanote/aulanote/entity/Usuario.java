@@ -23,6 +23,12 @@ public class Usuario {
     private String email;
     @Column(name = "cargo", nullable = false, length = 100)
     private String cargo;
+    @Column(name = "profesor_id", nullable = true)
+    private Integer profesorId;
+    @Column(name = "activo")
+    private Boolean activo = true;
+
+
     // Constructor
     public Usuario() {}
     public Usuario(String nombre, String apellido, String contrasena, String email, String cargo) {
@@ -77,4 +83,12 @@ public class Usuario {
     public void setEmail(String email) {
         this.email = email;
     }
+    public Boolean getActivo() {
+    return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
 }
