@@ -735,7 +735,7 @@ function cargarestudiantes() {
       };
 
       try {
-        const res = await fetch("http://localhost:8080/api/mensajes", {
+        const res = await fetch("/api/mensajes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mensaje)
@@ -772,7 +772,7 @@ function cargarCalificaciones() {
   }
 
   // Traer cursos del profesor
-  fetch(`http://localhost:8080/api/curso/profesor/${profesorGlobal.id}`)
+  fetch(`/api/curso/profesor/${profesorGlobal.id}`)
     .then(res => res.json())
     .then(cursos => {
       const listaDiv = document.getElementById("listaCursos");
@@ -848,7 +848,7 @@ function verCalificacionesCurso(idCurso, nombreCurso) {
   document.head.appendChild(style);
 
   // 🔹 Cargar entregas desde la API
-  fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/tareas`)
+  fetch(`/api/entregas/curso/${idCurso}/tareas`)
     .then(async res => {
       console.log("📡 Respuesta del servidor:", res.status);
 
@@ -945,7 +945,7 @@ detalleDiv.querySelectorAll(".btn-guardar").forEach(btn => {
       return;
     }
 
-    fetch(`http://localhost:8080/api/entregas/calificar/${entregaId}?calificacion=${nuevaNota}`, {
+    fetch(`/api/entregas/calificar/${entregaId}?calificacion=${nuevaNota}`, {
       method: "PUT"
     })
     .then(async res => {
@@ -983,7 +983,7 @@ detalleDiv.querySelectorAll(".btn-guardar").forEach(btn => {
     });
     // ====================== 🔹 MODAL DE VISUALIZACIÓN DE PDF ======================
 function verPDFenModal(idEntrega, nombreTarea) {
-  const url = `http://localhost:8080/api/entregas/descargar/${idEntrega}`;
+  const url = `/api/entregas/descargar/${idEntrega}`;
 
   // Eliminar modales previos
   document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
@@ -1111,7 +1111,7 @@ function cargarForosProfesor() {
 
     const nuevoForo = { titulo, descripcion, autorId: profesorGlobal.id };
 
-    fetch("http://localhost:8080/api/foros/crear", {
+    fetch("/api/foros/crear", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevoForo)
@@ -1125,7 +1125,7 @@ function cargarForosProfesor() {
   });
 
 
-  fetch("http://localhost:8080/api/foros")
+  fetch("/api/foros")
     .then(r => r.json())
     .then(foros => {
       contenedor.innerHTML = "";
@@ -1205,7 +1205,7 @@ function cargarForosProfesor() {
 
           const nuevoComentario = { contenido };
 
-          fetch(`http://localhost:8080/api/comentarios/foro/${id}/usuario/${profesorGlobal.id}`, {
+          fetch(`/api/comentarios/foro/${id}/usuario/${profesorGlobal.id}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(nuevoComentario)
@@ -1230,7 +1230,7 @@ function cargarForosProfesor() {
             tituloEl.style.border = descEl.style.border = "1px solid #ccc";
             btnEditar.textContent = "💾 Guardar";
           } else {
-            fetch(`http://localhost:8080/api/foros/${id}`, {
+            fetch(`/api/foros/${id}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1253,7 +1253,7 @@ function cargarForosProfesor() {
         // --- Eliminar foro ---
         divForo.querySelector(".btn-eliminar").addEventListener("click", () => {
           if (!confirm("¿Eliminar este foro?")) return;
-          fetch(`http://localhost:8080/api/foros/${id}`, { method: "DELETE" })
+          fetch(`/api/foros/${id}`, { method: "DELETE" })
             .then(resp => {
               if (!resp.ok) throw new Error("Error al eliminar foro");
               mostrarNotificacion("🗑️ Foro eliminado", "exito");
@@ -1276,7 +1276,7 @@ function cargarForosProfesor() {
 function cargarComentarios(foroId, contenedor) {
   contenedor.innerHTML = "<p style='color:#6b7280;'>Cargando comentarios...</p>";
 
-  fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
+  fetch(`/api/comentarios/foro/${foroId}`)
     .then((r) => {
       if (!r.ok) throw new Error("Error al obtener comentarios");
       return r.json();
@@ -1344,7 +1344,7 @@ function cargarComentarios(foroId, contenedor) {
           btnEliminar.addEventListener("click", () => {
             if (!confirm("¿Eliminar este comentario?")) return;
 
-            fetch(`http://localhost:8080/api/comentarios/${c.idComentario}/usuario/${profesorGlobal.id}`, {
+            fetch(`/api/comentarios/${c.idComentario}/usuario/${profesorGlobal.id}`, {
               method: "DELETE",
             })
               .then((resp) => {
@@ -1371,7 +1371,7 @@ function cargarRespuestas(comentarioPadreId, contenedor, foroId) {
     return;
   }
 
-  fetch(`http://localhost:8080/api/comentarios/respuestas/${comentarioPadreId}`)
+  fetch(`/api/comentarios/respuestas/${comentarioPadreId}`)
     .then((r) => {
       if (!r.ok) throw new Error("Error al cargar respuestas");
       return r.json();
@@ -1418,7 +1418,7 @@ function cargarRespuestas(comentarioPadreId, contenedor, foroId) {
           btnEliminar.addEventListener("click", () => {
             if (!confirm("¿Eliminar esta respuesta?")) return;
 
-            fetch(`http://localhost:8080/api/comentarios/${r.idComentario}/usuario/${profesorGlobal.id}`, {
+            fetch(`/api/comentarios/${r.idComentario}/usuario/${profesorGlobal.id}`, {
               method: "DELETE",
             })
               .then((resp) => {
@@ -1466,7 +1466,7 @@ function mostrarFormularioRespuesta(foroId, comentarioPadreId, contenedor) {
 
     const nuevaResp = { contenido };
 
-    fetch(`http://localhost:8080/api/comentarios/foro/${foroId}/usuario/${profesorGlobal.id}/responder/${comentarioPadreId}`, {
+    fetch(`/api/comentarios/foro/${foroId}/usuario/${profesorGlobal.id}/responder/${comentarioPadreId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevaResp),
@@ -1491,7 +1491,7 @@ function editarComentario(idComentario, foroId, contenedor, contenidoActual) {
   const nuevoContenido = prompt("Editar comentario:", contenidoActual);
   if (!nuevoContenido) return;
 
-  fetch(`http://localhost:8080/api/comentarios/${idComentario}/usuario/${profesorGlobal.id}`, {
+  fetch(`/api/comentarios/${idComentario}/usuario/${profesorGlobal.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ contenido: nuevoContenido }),
@@ -1567,7 +1567,7 @@ function cargarCursos() {
   `;
 
   
-  fetch(`http://localhost:8080/api/curso/profesor/${profesorGlobal.id}`)
+  fetch(`/api/curso/profesor/${profesorGlobal.id}`)
     .then(r => r.json())
     .then(data => {
       const container = document.getElementById("cursosContainer");
@@ -1605,7 +1605,7 @@ function cargarCursos() {
           const nuevaDescripcion = prompt("Nueva descripción:", curso.descripcion);
 
           if (nuevoNombre && nuevaDescripcion) {
-            fetch(`http://localhost:8080/api/curso/actualizar/${curso.idCurso}`, {
+            fetch(`/api/curso/actualizar/${curso.idCurso}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1629,7 +1629,7 @@ function cargarCursos() {
         // 🔹 Botón Eliminar
         card.querySelector(".btnEliminar").addEventListener("click", () => {
           if (confirm(`¿Seguro que deseas eliminar el curso "${curso.nombre}"?`)) {
-            fetch(`http://localhost:8080/api/curso/eliminar/${curso.idCurso}`, { method: "DELETE" })
+            fetch(`/api/curso/eliminar/${curso.idCurso}`, { method: "DELETE" })
               .then(r => {
                 if (!r.ok) throw new Error("❌ Error al eliminar curso");
                 alert("🗑️ Curso eliminado correctamente");
@@ -1641,7 +1641,7 @@ function cargarCursos() {
 
         // 🔹 Botón Ver Estudiantes (usando modal)
         card.querySelector(".btnVer").addEventListener("click", () => {
-          fetch(`http://localhost:8080/api/inscripciones/curso/${curso.idCurso}/estudiantes`)
+          fetch(`/api/inscripciones/curso/${curso.idCurso}/estudiantes`)
             .then(r => {
               if (!r.ok) throw new Error("❌ Error al cargar estudiantes");
               return r.json();
@@ -1680,7 +1680,7 @@ function cargarCursos() {
         const nombre = prompt("Nombre del curso:");
         const descripcion = prompt("Descripción del curso:");
         if (nombre && descripcion) {
-          fetch("http://localhost:8080/api/curso/crear", {
+          fetch("/api/curso/crear", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
