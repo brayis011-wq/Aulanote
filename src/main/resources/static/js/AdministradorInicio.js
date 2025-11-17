@@ -43,7 +43,7 @@ function mostrarFormularioUsuario() {
 
 // 👉 Cargar usuarios desde el backend
 function cargarUsuarios() {
-  fetch("http://localhost:8080/api/usuario")
+  fetch("/api/usuario")
     .then(res => {
       if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
       return res.json();
@@ -93,8 +93,8 @@ function guardarUsuario() {
   }
 
   const url = id
-    ? `http://localhost:8080/api/usuario/actualizar/${id}`
-    : "http://localhost:8080/api/usuario/crear";
+    ? `/api/usuario/actualizar/${id}`
+    : "/api/usuario/crear";
   const metodo = id ? "PUT" : "POST";
 
   fetch(url, {
@@ -120,7 +120,7 @@ function guardarUsuario() {
 // 👉 Eliminar usuario
 function eliminarUsuario(id) {
   if (confirm("¿Seguro que deseas eliminar este usuario?")) {
-    fetch(`http://localhost:8080/api/usuario/eliminar/${id}`, { method: "DELETE" })
+    fetch(`/api/usuario/eliminar/${id}`, { method: "DELETE" })
       .then(res => {
         if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
         alert("🗑️ Usuario eliminado correctamente.");
@@ -132,7 +132,7 @@ function eliminarUsuario(id) {
 
 // 👉 Editar usuario
 function editarUsuario(id) {
-  fetch(`http://localhost:8080/api/usuario/buscar/${id}`)
+  fetch(`/api/usuario/buscar/${id}`)
     .then(res => {
       if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
       return res.json();
@@ -150,7 +150,7 @@ function editarUsuario(id) {
 }
 function restaurarUsuario(id) {
   if (confirm("¿Deseas restaurar este usuario?")) {
-    fetch(`http://localhost:8080/api/usuario/restaurar/${id}`, {
+    fetch(`/api/usuario/restaurar/${id}`, {
       method: "PUT"
     })
       .then(response => {
