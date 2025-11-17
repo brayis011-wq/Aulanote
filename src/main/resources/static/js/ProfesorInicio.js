@@ -605,7 +605,7 @@ function cargarestudiantes() {
     </div>
   `;
 
-  fetch("http://localhost:8080/api/usuario")
+  fetch("/api/usuario")
     .then(r => r.json())
     .then(data => {
       const container = document.getElementById("estudiantesContainer");
