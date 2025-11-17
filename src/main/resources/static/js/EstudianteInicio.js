@@ -210,7 +210,7 @@ function cargarProfesores() {
     </div>
   `;
 
-  fetch("http://localhost:8080/api/usuario")
+  fetch("/api/usuario")
     .then(r => r.json())
     .then(data => {
       const container = document.getElementById("profesoresContainer");
@@ -320,7 +320,7 @@ function cargarProfesores() {
       };
 
       try {
-        const res = await fetch("http://localhost:8080/api/mensajes", {
+        const res = await fetch("/api/mensajes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mensaje)
@@ -395,7 +395,7 @@ async function cargarListaTareas(idUsuario) {
   const container = document.getElementById("tareasContainer");
 
   try {
-    const response = await fetch("http://localhost:8080/api/tareas");
+    const response = await fetch("/api/tareas");
     if (!response.ok) throw new Error("Error al obtener tareas");
     const data = await response.json();
 
@@ -485,7 +485,7 @@ function abrirModalTarea(tarea, fecha, idUsuario) {
     formData.append("idUsuario", idUsuario);
 
     try {
-      const resp = await fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/subir`, {
+      const resp = await fetch(`/api/entregas/curso/${idCurso}/subir`, {
         method: "POST",
         body: formData
       });
@@ -509,7 +509,7 @@ async function cargarEntregas(idUsuario) {
   cont.innerHTML = "⏳ Cargando entregas...";
 
   try {
-    const resp = await fetch(`http://localhost:8080/api/entregas/usuario/${idUsuario}`);
+    const resp = await fetch(`/api/entregas/usuario/${idUsuario}`);
     if (!resp.ok) throw new Error("Error al obtener entregas");
 
     const entregas = await resp.json();
@@ -579,13 +579,13 @@ async function cargarEntregas(idUsuario) {
   }
 }
 function verPDF(idEntrega) {
-  window.open(`http://localhost:8080/api/entregas/descargar/${idEntrega}`, "_blank");
+  window.open(`/api/entregas/descargar/${idEntrega}`, "_blank");
 }
 async function eliminarEntrega(idEntrega) {
   if (!confirm("¿Deseas eliminar esta entrega?")) return;
 
   try {
-    const resp = await fetch(`http://localhost:8080/api/entregas/${idEntrega}/eliminar`, {
+    const resp = await fetch(`/api/entregas/${idEntrega}/eliminar`, {
       method: "DELETE"
     });
 
@@ -624,7 +624,7 @@ async function editarEntrega(idEntrega) {
     formData.append("nombreTarea", nuevoNombre);
     if (nuevoArchivo) formData.append("archivo", nuevoArchivo);
 
-    const resp = await fetch(`http://localhost:8080/api/entregas/${idEntrega}/editar`, {
+    const resp = await fetch(`/api/entregas/${idEntrega}/editar`, {
       method: "PUT",
       body: formData
     });
@@ -652,7 +652,7 @@ async function inicializarUsuario() {
 
   try {
     console.log("🔄 Inicializando usuario...");
-    const resp = await fetch("http://localhost:8080/api/usuario/perfil");
+    const resp = await fetch("/api/usuario/perfil");
     if (!resp.ok) throw new Error("Error al obtener perfil");
     const usuario = await resp.json();
     window.usuarioId = usuario.id;
@@ -725,7 +725,7 @@ async function cargarForos() {
   const contenedor = document.getElementById("listaForos");
   contenedor.innerHTML = "<p>Cargando foros...</p>";
 
-  fetch("http://localhost:8080/api/foros")
+  fetch("/api/foros")
     .then((response) => {
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       return response.json();
@@ -803,7 +803,7 @@ async function cargarForos() {
           const contenido = inputComentario.value.trim();
           if (!contenido) return mostrarNotificacion("⚠️ Escribe un comentario", "error");
 
-          fetch(`http://localhost:8080/api/comentarios/foro/${id}/usuario/${window.usuarioId}`, {
+          fetch(`/api/comentarios/foro/${id}/usuario/${window.usuarioId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contenido }),
@@ -831,7 +831,7 @@ async function cargarComentarios(foroId, contenedor) {
   
   contenedor.innerHTML = "<p style='color:#6b7280;'>Cargando comentarios...</p>";
 
-  fetch(`http://localhost:8080/api/comentarios/foro/${foroId}`)
+  fetch(`/api/comentarios/foro/${foroId}`)
     .then((r) => {
       if (!r.ok) throw new Error("Error al obtener comentarios");
       return r.json();
@@ -895,7 +895,7 @@ async function cargarComentarios(foroId, contenedor) {
           btnEliminar.addEventListener("click", () => {
             if (!confirm("¿Eliminar este comentario?")) return;
 
-            fetch(`http://localhost:8080/api/comentarios/${c.idComentario}/usuario/${window.usuarioId}`, {
+            fetch(`/api/comentarios/${c.idComentario}/usuario/${window.usuarioId}`, {
               method: "DELETE",
             })
               .then((resp) => {
@@ -922,7 +922,7 @@ function cargarRespuestas(comentarioPadreId, contenedor, foroId) {
     return;
   }
 
-  fetch(`http://localhost:8080/api/comentarios/respuestas/${comentarioPadreId}`)
+  fetch(`/api/comentarios/respuestas/${comentarioPadreId}`)
     .then((r) => {
       if (!r.ok) throw new Error("Error al cargar respuestas");
       return r.json();
@@ -967,7 +967,7 @@ function cargarRespuestas(comentarioPadreId, contenedor, foroId) {
           btnEliminar.addEventListener("click", () => {
             if (!confirm("¿Eliminar esta respuesta?")) return;
 
-            fetch(`http://localhost:8080/api/comentarios/${r.idComentario}/usuario/${window.usuarioId}`, {
+            fetch(`/api/comentarios/${r.idComentario}/usuario/${window.usuarioId}`, {
               method: "DELETE",
             })
               .then((resp) => {
@@ -1012,7 +1012,7 @@ async function mostrarFormularioRespuesta(foroId, comentarioPadreId, contenedor)
 
     const nuevaResp = { contenido };
 
-    fetch(`http://localhost:8080/api/comentarios/foro/${foroId}/usuario/${window.usuarioId}/responder/${comentarioPadreId}`, {
+    fetch(`/api/comentarios/foro/${foroId}/usuario/${window.usuarioId}/responder/${comentarioPadreId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevaResp),
@@ -1035,7 +1035,7 @@ function editarComentario(idComentario, foroId, contenedor, contenidoActual, com
   const nuevoContenido = prompt("Editar comentario:", contenidoActual);
   if (!nuevoContenido) return;
 
-  fetch(`http://localhost:8080/api/comentarios/${idComentario}/usuario/${window.usuarioId}`, {
+  fetch(`/api/comentarios/${idComentario}/usuario/${window.usuarioId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ contenido: nuevoContenido }),
@@ -1061,7 +1061,7 @@ async function cargarPerfil() {
 
   try {
     
-    const resp = await fetch("http://localhost:8080/api/usuario/perfil");
+    const resp = await fetch("/api/usuario/perfil");
     if (!resp.ok) throw new Error("Error al obtener perfil");
     const usuario = await resp.json();
     window.usuarioId = usuario.id; 
@@ -1070,7 +1070,7 @@ async function cargarPerfil() {
     let cursosHTML = "<p>Cargando cursos...</p>";
     let cursos = [];
     try {
-      const cursosResp = await fetch("http://localhost:8080/api/curso");
+      const cursosResp = await fetch("/api/curso");
       if (!cursosResp.ok) throw new Error("No se pudieron cargar cursos");
       cursos = await cursosResp.json();
 
@@ -1210,7 +1210,7 @@ function cargarCalificaciones() {
     return;
   }
 
-  fetch(`http://localhost:8080/api/entregas/promedios/usuario/${idUsuario}`)
+  fetch(`/api/entregas/promedios/usuario/${idUsuario}`)
     .then(response => {
       if (!response.ok) throw new Error("Error al obtener promedios");
       return response.json();
@@ -1309,7 +1309,7 @@ function verTareasCurso(idCurso, nombreCurso) {
   const detalleDiv = document.getElementById("detalleTareas");
   detalleDiv.innerHTML = `<h2> Tareas de ${nombreCurso}</h2><p>Cargando...</p>`;
 
-  fetch(`http://localhost:8080/api/entregas/curso/${idCurso}/tareas?usuarioId=${usuarioId}`)
+  fetch(`/api/entregas/curso/${idCurso}/tareas?usuarioId=${usuarioId}`)
     .then(response => response.json())
     .then(tareas => {
       if (tareas.length === 0) {
@@ -1353,7 +1353,7 @@ function verTareasCurso(idCurso, nombreCurso) {
     <div id="cursosContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>
   `;
 
-  fetch("http://localhost:8080/api/curso")
+  fetch("/api/curso")
     .then(r => r.json())
     .then(data => {
       const container = document.getElementById("cursosContainer");
